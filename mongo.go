@@ -18,12 +18,12 @@ func getMongoEnv() string {
 	return url
 }
 
-func MongoMain() {
+func MongoMain(ch_input, ch_output chan map[string]interface{}) {
 
 	url := getMongoEnv()
 	counter := 1
 	for {
-		MongoWorker(url)
+		MongoWorker(url, ch_input, ch_output)
 		time.Sleep(time.Duration(counter) * time.Second)
 		if counter <= 10 {
 			counter++
@@ -31,7 +31,7 @@ func MongoMain() {
 	}
 }
 
-func MongoWorker(url string) {
+func MongoWorker(url string, ch_input, ch_output chan map[string]interface{}) {
 	ctx := context.TODO()
 	opts := options.Client().ApplyURI(url)
 

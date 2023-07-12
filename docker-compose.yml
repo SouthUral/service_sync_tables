@@ -1,0 +1,9 @@
+version: "3.8"
+
+services:
+  mongo_test:
+    image: mongo
+    container_name: mongodb_test
+    restart: always
+    ports:
+     - 9000:27017
