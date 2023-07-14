@@ -67,6 +67,17 @@ func (mdb *MongoBase) mongoWorker(ch_input chan MessCommand, ch_output chan Mess
 
 				ch_output <- answer
 			}
+		case "input_data":
+			err := mdb.inputData(msg.Data, collection)
+			if err != nil {
+				return
+			}
+		case "drop_colllection":
+			err := mdb.dropCollection(collection)
+			if err != nil {
+				return
+			}
+
 		}
 	}
 
@@ -78,8 +89,22 @@ func (mdb *MongoBase) updateData() {
 }
 
 // метод для добавления документа
-func (mdb *MongoBase) inputData() {
+func (mdb *MongoBase) inputData(data interface{}, colection *mongo.Collection) interface{} {
+	resMess := 
 
+	// проверка подключения
+	if err := mdb.checkConn(); err != nil {
+		return err
+	}
+
+	insertResult, err := colection.InsertOne(mdb.ctx, data)
+	if err != nil {
+		log.Println("Insert error: ", err)
+		return err
+	}
+
+	fmt.Println("Inserted a single document: ", insertResult.InsertedID)
+	return nil
 }
 
 // метод для удаления документа
@@ -87,9 +112,30 @@ func (mdb *MongoBase) deleteData() {
 
 }
 
+// метод для удалении коллекции
+func (mdb *MongoBase) dropCollection(collection *mongo.Collection) interface{} {
+
+	// проверка подключения
+	if err := mdb.checkConn(); err != nil {
+		return err
+	}
+
+	err := collection.Drop(mdb.ctx)
+	if err != nil {
+		log.Println("Ошибка удаления коллекции: ", err)
+		return err
+	}
+	return nil
+}
+
 // метод для получения всех документов
 func (mdb *MongoBase) getAllData(collection *mongo.Collection) ([]*MessageDB, interface{}) {
 	res := []*MessageDB{}
+
+	// проверка подключения
+	if err := mdb.checkConn(); err != nil {
+		return res, err
+	}
 
 	cursor, err := collection.Find(mdb.ctx, bson.M{})
 	if err != nil {

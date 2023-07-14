@@ -7,6 +7,15 @@ type MessageDB struct {
 	IsActive bool
 }
 
+// структура возвращается из монго
+type MessDBAnsw struct {
+	oid      string
+	Table    string
+	DataBase string
+	Offset   string
+	IsActive bool
+}
+
 type MessCommand struct {
 	Command string
 	Data    MessageDB
