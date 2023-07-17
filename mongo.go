@@ -30,7 +30,7 @@ func (mdb *MongoBase) getMongoEnv() {
 
 // Запускает MongoWorker в цикле, если происходит дисконнект, то MongoWorker будет
 // постоянно перезапускаться
-func (mdb *MongoBase) MongoMain(ch_input chan MessCommand, ch_output chan MessAnswer) {
+func (mdb *MongoBase) MongoMain(ch_input chan MessCommand, ch_output chan MessCommand) {
 	mdb.getMongoEnv()
 	counter := 1
 	for {
@@ -46,7 +46,7 @@ func (mdb *MongoBase) MongoMain(ch_input chan MessCommand, ch_output chan MessAn
 	}
 }
 
-func (mdb *MongoBase) mongoWorker(ch_input chan MessCommand, ch_output chan MessAnswer) {
+func (mdb *MongoBase) mongoWorker(ch_input chan MessCommand, ch_output chan MessCommand) {
 
 	// defer mdb.client.Disconnect(mdb.ctx)
 	// fmt.Printf("%T\n", mdb.client)
@@ -54,57 +54,118 @@ func (mdb *MongoBase) mongoWorker(ch_input chan MessCommand, ch_output chan Mess
 	collection := mdb.client.Database(mdb.database).Collection(mdb.collection)
 
 	for msg := range ch_input {
-		switch msg.Command {
+		switch msg.Info {
 		case "get_all":
 			data, err := mdb.getAllData(collection)
 			if err != nil {
+				answer := MessCommand{
+					Info: "False",
+					Data: StateMess{},
+				}
+				ch_output <- answer
 				return
 			}
 			for _, messDb := range data {
-				answer := MessAnswer{
-					Status: "Ok",
-					Data:   messDb}
+				answer := MessCommand{
+					Info: "True",
+					Data: *messDb}
 
 				ch_output <- answer
 			}
 		case "input_data":
-			err := mdb.inputData(msg.Data, collection)
+			var answer MessCommand
+			err, answDB := mdb.inputData(msg.Data, collection)
 			if err != nil {
+				answer = MessCommand{
+					Info: "False",
+					Data: msg.Data,
+				}
+				ch_output <- answer
 				return
 			}
+			answer = MessCommand{
+				Info: "True",
+				Data: answDB}
+			ch_output <- answer
 		case "drop_colllection":
 			err := mdb.dropCollection(collection)
 			if err != nil {
 				return
 			}
-
+		case "update":
+			var answer MessCommand
+			err := mdb.updateData(msg.Data, collection)
+			if err != nil {
+				answer = MessCommand{
+					Info: "False",
+					Data: msg.Data,
+				}
+				ch_output <- answer
+				return
+			}
+			answer = MessCommand{
+				Info: "True",
+				Data: msg.Data,
+			}
+			ch_output <- answer
 		}
 	}
 
 }
 
 // метод для обновления документа
-func (mdb *MongoBase) updateData() {
-
-}
-
-// метод для добавления документа
-func (mdb *MongoBase) inputData(data interface{}, colection *mongo.Collection) interface{} {
-	resMess := 
-
+func (mdb *MongoBase) updateData(data StateMess, collection *mongo.Collection) interface{} {
 	// проверка подключения
 	if err := mdb.checkConn(); err != nil {
 		return err
 	}
 
+	filter := bson.M{"_id": data.oid}
+	updated := bson.M{
+		"$set": bson.M{
+			"table":    data.Table,
+			"database": data.DataBase,
+			"offset":   data.Offset,
+			"isactive": data.IsActive,
+		},
+	}
+	_, err := collection.UpdateOne(mdb.ctx, filter, updated)
+	if err != nil {
+		log.Println("updateData error: ", err)
+		return err
+	}
+	log.Println("data updated: ", data.oid)
+	return nil
+
+}
+
+// метод для добавления документа, возвращает ошибку и заполенную структуру с oid из монго
+func (mdb *MongoBase) inputData(data StateMess, colection *mongo.Collection) (interface{}, StateMess) {
+	var resMess interface{}
+	var DbObject StateMess
+
+	// проверка подключения
+	if err := mdb.checkConn(); err != nil {
+		return err, DbObject
+	}
+
 	insertResult, err := colection.InsertOne(mdb.ctx, data)
 	if err != nil {
 		log.Println("Insert error: ", err)
-		return err
+		return err, DbObject
+	}
+	resMess = insertResult.InsertedID
+
+	fmt.Println("Inserted a single document: ", resMess)
+	DbObject = StateMess{
+		oid:      resMess,
+		Table:    data.Table,
+		DataBase: data.DataBase,
+		Offset:   data.Offset,
+		IsActive: data.IsActive,
 	}
 
-	fmt.Println("Inserted a single document: ", insertResult.InsertedID)
-	return nil
+	return nil, DbObject
 }
 
 // метод для удаления документа
@@ -129,8 +190,8 @@ func (mdb *MongoBase) dropCollection(collection *mongo.Collection) interface{} {
 }
 
 // метод для получения всех документов
-func (mdb *MongoBase) getAllData(collection *mongo.Collection) ([]*MessageDB, interface{}) {
-	res := []*MessageDB{}
+func (mdb *MongoBase) getAllData(collection *mongo.Collection) ([]*StateMess, interface{}) {
+	res := []*StateMess{}
 
 	// проверка подключения
 	if err := mdb.checkConn(); err != nil {
@@ -142,7 +203,7 @@ func (mdb *MongoBase) getAllData(collection *mongo.Collection) ([]*MessageDB, in
 		return res, err
 	}
 	for cursor.Next(mdb.ctx) {
-		var elem MessageDB
+		var elem StateMess
 		err := cursor.Decode(&elem)
 		if err != nil {
 			return res, err

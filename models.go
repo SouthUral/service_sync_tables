@@ -1,15 +1,15 @@
 package main
 
-type MessageDB struct {
-	Table    string
-	DataBase string
-	Offset   string
-	IsActive bool
-}
+// type MessageDB struct {
+// 	Table    string
+// 	DataBase string
+// 	Offset   string
+// 	IsActive bool
+// }
 
 // структура возвращается из монго
-type MessDBAnsw struct {
-	oid      string
+type StateMess struct {
+	oid      interface{}
 	Table    string
 	DataBase string
 	Offset   string
@@ -17,11 +17,11 @@ type MessDBAnsw struct {
 }
 
 type MessCommand struct {
-	Command string
-	Data    MessageDB
+	Info string
+	Data StateMess
 }
 
-type MessAnswer struct {
-	Status string
-	Data   interface{}
-}
+// type MessAnswer struct {
+// 	Status string
+// 	Data   StateMess
+// }
