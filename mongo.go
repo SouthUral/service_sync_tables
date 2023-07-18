@@ -73,6 +73,7 @@ func (mdb *MongoBase) mongoWorker(ch_input chan MessCommand, ch_output chan Mess
 				ch_output <- answer
 			}
 		case "input_data":
+			// метод используется для добавления нового состояния в БД
 			var answer MessCommand
 			err, answDB := mdb.inputData(msg.Data, collection)
 			if err != nil {
