@@ -17,8 +17,9 @@ type StateMess struct {
 }
 
 type MessCommand struct {
-	Info string
-	Data StateMess
+	Info  string
+	Data  StateMess
+	Error interface{}
 }
 
 // type MessAnswer struct {

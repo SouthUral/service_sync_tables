@@ -55,58 +55,66 @@ func (mdb *MongoBase) mongoWorker(ch_input chan MessCommand, ch_output chan Mess
 
 	for msg := range ch_input {
 		switch msg.Info {
-		case "get_all":
+		case GetAll:
 			data, err := mdb.getAllData(collection)
 			if err != nil {
 				answer := MessCommand{
-					Info: "False",
-					Data: StateMess{},
+					Info:  GetAll,
+					Data:  StateMess{},
+					Error: err,
 				}
 				ch_output <- answer
 				return
 			}
 			for _, messDb := range data {
 				answer := MessCommand{
-					Info: "True",
-					Data: *messDb}
+					Info:  GetAll,
+					Data:  *messDb,
+					Error: nil,
+				}
 
 				ch_output <- answer
 			}
-		case "input_data":
+		case InputData:
 			// метод используется для добавления нового состояния в БД
 			var answer MessCommand
 			err, answDB := mdb.inputData(msg.Data, collection)
 			if err != nil {
 				answer = MessCommand{
-					Info: "False",
-					Data: msg.Data,
+					Info:  InputData,
+					Data:  msg.Data,
+					Error: err,
 				}
 				ch_output <- answer
 				return
 			}
 			answer = MessCommand{
-				Info: "True",
-				Data: answDB}
+				Info:  InputData,
+				Data:  answDB,
+				Error: nil,
+			}
 			ch_output <- answer
-		case "drop_colllection":
+		case DropCollection:
 			err := mdb.dropCollection(collection)
 			if err != nil {
 				return
 			}
-		case "update":
+		case UpdateData:
 			var answer MessCommand
 			err := mdb.updateData(msg.Data, collection)
 			if err != nil {
 				answer = MessCommand{
-					Info: "False",
-					Data: msg.Data,
+					Info:  UpdateData,
+					Data:  msg.Data,
+					Error: err,
 				}
 				ch_output <- answer
 				return
 			}
 			answer = MessCommand{
-				Info: "True",
-				Data: msg.Data,
+				Info:  UpdateData,
+				Data:  msg.Data,
+				Error: nil,
 			}
 			ch_output <- answer
 		}
@@ -170,7 +178,7 @@ func (mdb *MongoBase) inputData(data StateMess, colection *mongo.Collection) (in
 }
 
 // метод для удаления документа
-func (mdb *MongoBase) deleteData() {
+func (mdb *MongoBase) dropData() {
 
 }
 
