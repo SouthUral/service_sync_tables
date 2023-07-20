@@ -29,7 +29,15 @@ type syncMessChan struct {
 }
 
 type StateSyncStorage struct {
-	id string
+	id        string
+	table     string
+	offset    interface{}
+	err       interface{}
+	isSave    bool
+	isActive  bool
+	syncChan  chan string
+	dateStart interface{}
+	dateEnd   interface{}
 }
 
 // type MessAnswer struct {

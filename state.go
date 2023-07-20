@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"time"
 )
 
 const (
@@ -12,6 +14,8 @@ const (
 	UpdateData     = "update_data"
 	DropCollection = "drop_collection"
 	DropData       = "drop_data"
+	Stop           = "stop"
+	Continue       = "continue"
 )
 
 type State struct {
@@ -65,11 +69,20 @@ func (state *State) MongoWorker(mess MessCommand) {
 
 // метод обработчик для сообщений UpdateData из модуля MongoDB
 func (state *State) mdbUpdateData(mess MessCommand) {
+	id := fmt.Sprintf("%s", mess.Data.oid)
+	itemSync := state.stateStorage[id]
 	if mess.Error != nil {
 		log.Println("Данные не обновлены в Mongo: ", mess.Error)
+		// добавляет данные об ошибке в хранилище
+		itemSync.err = mess.Error
+		itemSync.isSave = false
+		itemSync.dateEnd = time.Now()
+		// отправляет сообщение горутине об остановке
+		itemSync.syncChan <- Stop
 		return
 	}
 	// если данные обновлены то в горутину отпрвляется сообщение о продолжении работы
+	itemSync.syncChan <- Continue
 }
 
 // обработчик сообщений из монго, работает с сообщниями InputData
@@ -100,9 +113,21 @@ func (state *State) mdbGetAll(mess MessCommand) {
 
 // функция для запуска горутин синхронизации
 func (state *State) InitSyncT(data StateMess) {
+	// создает канал для связи с горутиной, запускает горутину и записывает канал в структуру по id
 	syncInput := make(chan string)
 	go SyncTables(data, syncInput, state.syncOutput)
-
+	// создает новую запись в словаре stateStorage
+	id := fmt.Sprintf("%s", data.oid)
+	state.stateStorage[id] = StateSyncStorage{
+		id:        id,
+		table:     data.Table,
+		offset:    data.Offset,
+		err:       nil,
+		isActive:  true,
+		syncChan:  syncInput,
+		dateStart: time.Now(),
+		dateEnd:   nil,
+	}
 }
 
 // функция запускается в отдельном потоке, ее задача подключиться к БД1 и БД2 и синхронизировать их
