@@ -51,8 +51,15 @@ func (state *State) StateWorker() {
 		// ловит сообщение из mdb
 		case mess := <-state.mdbOutput:
 			state.MongoWorker(mess)
+		case mess := <-state.syncOutput:
+			state.handlerSyncThreads(mess)
 		}
 	}
+}
+
+// обработчик для сообщений которые приходят из горутин
+func (state *State) handlerSyncThreads(mess syncMessChan) {
+
 }
 
 // Обработчик сообщений приходящих от модуля MongoDB
