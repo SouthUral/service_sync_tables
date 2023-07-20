@@ -22,6 +22,16 @@ type MessCommand struct {
 	Error interface{}
 }
 
+type syncMessChan struct {
+	Offset string
+	Error  interface{}
+	id     string
+}
+
+type StateSyncStorage struct {
+	id string
+}
+
 // type MessAnswer struct {
 // 	Status string
 // 	Data   StateMess

@@ -15,11 +15,13 @@ const (
 )
 
 type State struct {
-	table      string
-	status     int
-	mongoError interface{}
-	mdbInput   chan MessCommand
-	mdbOutput  chan MessCommand
+	table        string
+	status       int
+	mongoError   interface{}
+	mdbInput     chan MessCommand
+	mdbOutput    chan MessCommand
+	syncOutput   chan syncMessChan
+	stateStorage map[string]StateSyncStorage
 }
 
 // создает структуру State и запускает горутину StateWorker
@@ -36,7 +38,8 @@ func InitState(mongoChInput chan MessCommand, mongoChOutput chan MessCommand) {
 // для обработки сообщений с каждым из модулей можно создать функции (3 функции)
 func (state *State) StateWorker() {
 	// метод для старта, запрашивает из монго все документы
-	state.mdbInput <- MessCommand{Info: "get_all"}
+	state.syncOutput = make(chan syncMessChan, 100)
+	state.mdbInput <- MessCommand{Info: GetAll}
 
 	// запускается бесконечный цикл обработки сообщений
 	for {
@@ -46,7 +49,6 @@ func (state *State) StateWorker() {
 			state.MongoWorker(mess)
 		}
 	}
-
 }
 
 // Обработчик сообщений приходящих от модуля MongoDB
@@ -56,8 +58,18 @@ func (state *State) MongoWorker(mess MessCommand) {
 		state.mdbGetAll(mess)
 	case InputData:
 		state.mdbInputData(mess)
+	case UpdateData:
+		state.mdbUpdateData(mess)
 	}
+}
 
+// метод обработчик для сообщений UpdateData из модуля MongoDB
+func (state *State) mdbUpdateData(mess MessCommand) {
+	if mess.Error != nil {
+		log.Println("Данные не обновлены в Mongo: ", mess.Error)
+		return
+	}
+	// если данные обновлены то в горутину отпрвляется сообщение о продолжении работы
 }
 
 // обработчик сообщений из монго, работает с сообщниями InputData
@@ -88,5 +100,15 @@ func (state *State) mdbGetAll(mess MessCommand) {
 
 // функция для запуска горутин синхронизации
 func (state *State) InitSyncT(data StateMess) {
+	syncInput := make(chan string)
+	go SyncTables(data, syncInput, state.syncOutput)
+
+}
+
+// функция запускается в отдельном потоке, ее задача подключиться к БД1 и БД2 и синхронизировать их
+// останавливается горутина сообщением из канала inputChan
+func SyncTables(data StateMess, inputChan chan string, outputChan chan syncMessChan) {
+	//  здесь должно быть подключение к БД1 и БД2
+	// в случае неудачного подключения нужно отправить ошибку в канал outputChan и завершить работу горутины
 
 }
