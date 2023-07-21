@@ -2,10 +2,17 @@ package main
 
 import (
 	"fmt"
+	"os"
+
+	"github.com/sirupsen/logrus"
 )
 
 // запускает читает переменные окружения и запускает горутины
 func main() {
+	logrus.SetLevel(logrus.DebugLevel)
+	logger := logrus.New()
+	logger.Out = os.Stdout
+
 	chan_mongo_input := make(chan MessCommand, 100)
 	chan_mongo_output := make(chan MessCommand, 100)
 

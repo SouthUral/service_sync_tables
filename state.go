@@ -30,6 +30,7 @@ type State struct {
 
 // создает структуру State и запускает горутину StateWorker
 func InitState(mongoChInput chan MessCommand, mongoChOutput chan MessCommand) {
+
 	w_state := State{
 		mdbInput:  mongoChInput,
 		mdbOutput: mongoChOutput,
@@ -59,6 +60,11 @@ func (state *State) StateWorker() {
 
 // обработчик для сообщений которые приходят из горутин
 func (state *State) handlerSyncThreads(mess syncMessChan) {
+	if mess.Error != nil {
+		itemSync := state.stateStorage[mess.id]
+		itemSync.err = mess.Error
+		logger.Error()
+	}
 
 }
 
