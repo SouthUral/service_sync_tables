@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -63,7 +64,7 @@ func (state *State) handlerSyncThreads(mess syncMessChan) {
 	if mess.Error != nil {
 		itemSync := state.stateStorage[mess.id]
 		itemSync.err = mess.Error
-		logger.Error()
+		log.Error(mess.Error)
 	}
 
 }
@@ -85,7 +86,7 @@ func (state *State) mdbUpdateData(mess MessCommand) {
 	id := fmt.Sprintf("%s", mess.Data.oid)
 	itemSync := state.stateStorage[id]
 	if mess.Error != nil {
-		log.Println("Данные не обновлены в Mongo: ", mess.Error)
+		log.Error("Данные не обновлены в Mongo: ", mess.Error)
 		// добавляет данные об ошибке в хранилище
 		itemSync.err = mess.Error
 		itemSync.isSave = false
@@ -102,7 +103,7 @@ func (state *State) mdbUpdateData(mess MessCommand) {
 // запуск горутины произойдет только после записи о синхронизации в mongo
 func (state *State) mdbInputData(mess MessCommand) {
 	if mess.Error != nil {
-		log.Println("Данные не добавлены в Mongo: ", mess.Error)
+		log.Error("Данные не добавлены в Mongo: ", mess.Error)
 		// отправка сообщения в канал REST о неудачном запуске
 		return
 	}
@@ -114,7 +115,7 @@ func (state *State) mdbInputData(mess MessCommand) {
 // обработчик сообщений из монго, работает с сообщниями GetAll
 func (state *State) mdbGetAll(mess MessCommand) {
 	if mess.Error != nil {
-		log.Println("Старт синхронизации не состоялся по причине: ", mess.Error)
+		log.Error("Старт синхронизации не состоялся по причине: ", mess.Error)
 		state.mongoError = mess.Error
 		return
 	}

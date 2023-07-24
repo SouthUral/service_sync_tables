@@ -3,9 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -140,7 +141,7 @@ func (mdb *MongoBase) updateData(data StateMess, collection *mongo.Collection) i
 	}
 	_, err := collection.UpdateOne(mdb.ctx, filter, updated)
 	if err != nil {
-		log.Println("updateData error: ", err)
+		log.Error("updateData error: ", err)
 		return err
 	}
 	log.Println("data updated: ", data.oid)
@@ -160,7 +161,7 @@ func (mdb *MongoBase) inputData(data StateMess, colection *mongo.Collection) (in
 
 	insertResult, err := colection.InsertOne(mdb.ctx, data)
 	if err != nil {
-		log.Println("Insert error: ", err)
+		log.Error("Insert error: ", err)
 		return err, DbObject
 	}
 	resMess = insertResult.InsertedID
@@ -192,7 +193,7 @@ func (mdb *MongoBase) dropCollection(collection *mongo.Collection) interface{} {
 
 	err := collection.Drop(mdb.ctx)
 	if err != nil {
-		log.Println("Ошибка удаления коллекции: ", err)
+		log.Error("Ошибка удаления коллекции: ", err)
 		return err
 	}
 	return nil
@@ -225,7 +226,7 @@ func (mdb *MongoBase) getAllData(collection *mongo.Collection) ([]*StateMess, in
 // метод для проверки подключения
 func (mdb *MongoBase) checkConn() interface{} {
 	if err := mdb.client.Ping(mdb.ctx, readpref.Primary()); err != nil {
-		log.Println(fmt.Sprintf("Подключние по url %s, не состоялось: ", mdb.url), err)
+		log.Error(fmt.Sprintf("Подключние по url %s, не состоялось: ", mdb.url), err)
 		return err
 	}
 	return nil
@@ -240,7 +241,7 @@ func (mdb *MongoBase) connectMongo() interface{} {
 
 	mdb.client, err = mongo.Connect(mdb.ctx, opts)
 	if err != nil {
-		log.Println("Ошибка подключения к MongoDB: ", err)
+		log.Error("Ошибка подключения к MongoDB: ", err)
 		return err
 	}
 
