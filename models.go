@@ -9,7 +9,7 @@ package main
 
 // структура возвращается из монго
 type StateMess struct {
-	oid      interface{}
+	oid      string
 	Table    string
 	DataBase string
 	Offset   string

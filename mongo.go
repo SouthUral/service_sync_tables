@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"regexp"
 
 	"time"
 
@@ -27,6 +28,12 @@ func (mdb *MongoBase) getMongoEnv() {
 	mdb.collection = getEnv("MONGO_COLLECTION")
 	mdb.database = getEnv("MONGO_DATABASE")
 	mdb.url = fmt.Sprintf("mongodb://%s:%s", host, port)
+}
+
+func MDBInit(ch_input chan MessCommand, ch_output chan MessCommand) {
+	mdb := MongoBase{}
+	log.Debug("Запуск MDB")
+	go mdb.MongoMain(ch_input, ch_output)
 }
 
 // Запускает MongoWorker в цикле, если происходит дисконнект, то MongoWorker будет
@@ -167,8 +174,12 @@ func (mdb *MongoBase) inputData(data StateMess, colection *mongo.Collection) (in
 	resMess = insertResult.InsertedID
 
 	fmt.Println("Inserted a single document: ", resMess)
+	id := fmt.Sprintf("%s", resMess)
+	// if err != nil {
+	// 	log.Error(err)
+	// }
 	DbObject = StateMess{
-		oid:      resMess,
+		oid:      id,
 		Table:    data.Table,
 		DataBase: data.DataBase,
 		Offset:   data.Offset,
@@ -214,10 +225,21 @@ func (mdb *MongoBase) getAllData(collection *mongo.Collection) ([]*StateMess, in
 	}
 	for cursor.Next(mdb.ctx) {
 		var elem StateMess
-		err := cursor.Decode(&elem)
+		var bitem bson.M
+		err := cursor.Decode(&bitem)
+		if err != nil {
+			log.Error(err)
+			return res, err
+		}
+		err = cursor.Decode(&elem)
 		if err != nil {
 			return res, err
 		}
+		oid, _ := bitem["_id"]
+		re := regexp.MustCompile(`"([a-fA-F0-9]{24})"`)
+		match := re.FindStringSubmatch(fmt.Sprintf("%s", oid))
+		id := fmt.Sprintf("%s", match[1])
+		elem.oid = id
 		res = append(res, &elem)
 	}
 	return res, nil

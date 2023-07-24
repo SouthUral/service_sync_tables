@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -33,8 +34,9 @@ type State struct {
 func InitState(mongoChInput chan MessCommand, mongoChOutput chan MessCommand) {
 
 	w_state := State{
-		mdbInput:  mongoChInput,
-		mdbOutput: mongoChOutput,
+		mdbInput:     mongoChInput,
+		mdbOutput:    mongoChOutput,
+		stateStorage: make(map[string]StateSyncStorage),
 	}
 	go w_state.StateWorker()
 }
@@ -61,12 +63,24 @@ func (state *State) StateWorker() {
 
 // обработчик для сообщений которые приходят из горутин
 func (state *State) handlerSyncThreads(mess syncMessChan) {
+	itemSync := state.stateStorage[mess.id]
 	if mess.Error != nil {
-		itemSync := state.stateStorage[mess.id]
 		itemSync.err = mess.Error
 		log.Error(mess.Error)
+		return
 	}
-
+	itemSync.offset = mess.Offset
+	itemSync.isSave = false
+	state.mdbInput <- MessCommand{
+		Info: UpdateData,
+		Data: StateMess{
+			oid:      itemSync.id,
+			Table:    itemSync.table,
+			Offset:   fmt.Sprintf("%s", itemSync.offset),
+			IsActive: itemSync.isActive,
+		},
+	}
+	log.Debug("Данные из горутины отправлены на сохранение в MongoDB")
 }
 
 // Обработчик сообщений приходящих от модуля MongoDB
@@ -131,17 +145,20 @@ func (state *State) InitSyncT(data StateMess) {
 	syncInput := make(chan string)
 	go SyncTables(data, syncInput, state.syncOutput)
 	// создает новую запись в словаре stateStorage
-	id := fmt.Sprintf("%s", data.oid)
-	state.stateStorage[id] = StateSyncStorage{
-		id:        id,
+	// id := fmt.Sprintf("%s", data.oid)
+	state.stateStorage[data.oid] = StateSyncStorage{
+		id:        data.oid,
 		table:     data.Table,
 		offset:    data.Offset,
 		err:       nil,
+		isSave:    true,
 		isActive:  true,
 		syncChan:  syncInput,
 		dateStart: time.Now(),
 		dateEnd:   nil,
 	}
+	log.Debug("Данные записаны в локальное хранение")
+	log.Debug(fmt.Sprintf("%+v\n", state.stateStorage[data.oid]))
 }
 
 // функция запускается в отдельном потоке, ее задача подключиться к БД1 и БД2 и синхронизировать их
@@ -149,5 +166,27 @@ func (state *State) InitSyncT(data StateMess) {
 func SyncTables(data StateMess, inputChan chan string, outputChan chan syncMessChan) {
 	//  здесь должно быть подключение к БД1 и БД2
 	// в случае неудачного подключения нужно отправить ошибку в канал outputChan и завершить работу горутины
+	var answer string
 
+	intOffset, err := strconv.Atoi(data.Offset)
+	newOffset := intOffset + 1
+	if err != nil {
+		log.Error(err)
+	}
+
+	for answer != Stop {
+
+		test_answer := syncMessChan{
+			Offset: strconv.Itoa(newOffset),
+			id:     fmt.Sprintf("%s", data.oid),
+			Error:  err,
+		}
+		outputChan <- test_answer
+		log.Debug("Сообщение отправлено, offset: ", newOffset)
+		answer = <-inputChan
+		time.Sleep(1 * time.Millisecond)
+		newOffset++
+	}
+
+	log.Debug("Получено сообщение, цикл прекращен: ", answer)
 }
