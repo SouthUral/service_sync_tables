@@ -75,6 +75,7 @@ func (state *State) handlerSyncThreads(mess syncMessChan) {
 		Info: UpdateData,
 		Data: StateMess{
 			oid:      itemSync.id,
+			DataBase: itemSync.dataBase,
 			Table:    itemSync.table,
 			Offset:   fmt.Sprintf("%s", itemSync.offset),
 			IsActive: itemSync.isActive,
@@ -149,6 +150,7 @@ func (state *State) InitSyncT(data StateMess) {
 	state.stateStorage[data.oid] = StateSyncStorage{
 		id:        data.oid,
 		table:     data.Table,
+		dataBase:  data.DataBase,
 		offset:    data.Offset,
 		err:       nil,
 		isSave:    true,
@@ -187,6 +189,8 @@ func SyncTables(data StateMess, inputChan chan string, outputChan chan syncMessC
 		time.Sleep(1 * time.Millisecond)
 		newOffset++
 	}
+	// close(outputChan)
 
-	log.Debug("Получено сообщение, цикл прекращен: ", answer)
+	defer log.Debug("Получено сообщение, цикл прекращен: ", answer)
+	return
 }

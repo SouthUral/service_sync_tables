@@ -31,6 +31,7 @@ type syncMessChan struct {
 type StateSyncStorage struct {
 	id        string
 	table     string
+	dataBase  string
 	offset    interface{}
 	err       interface{}
 	isSave    bool

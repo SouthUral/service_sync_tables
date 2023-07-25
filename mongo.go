@@ -137,20 +137,27 @@ func (mdb *MongoBase) updateData(data StateMess, collection *mongo.Collection) i
 		return err
 	}
 
-	filter := bson.M{"_id": data.oid}
+	filter := bson.M{"table": data.Table,
+		"database": data.DataBase}
 	updated := bson.M{
 		"$set": bson.M{
-			"table":    data.Table,
-			"database": data.DataBase,
+			"id": data.oid,
+			// "table":    data.Table,
+			// "database": data.DataBase,
 			"offset":   data.Offset,
 			"isactive": data.IsActive,
 		},
 	}
-	_, err := collection.UpdateOne(mdb.ctx, filter, updated)
+	updateRes, err := collection.UpdateOne(mdb.ctx, filter, updated)
 	if err != nil {
 		log.Error("updateData error: ", err)
 		return err
 	}
+	if updateRes.MatchedCount == 0 {
+		log.Error("updateData error: ", "Данные не обновлены")
+		return "updateData error"
+	}
+
 	log.Println("data updated: ", data.oid)
 	return nil
 
