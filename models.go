@@ -1,12 +1,5 @@
 package main
 
-// type MessageDB struct {
-// 	Table    string
-// 	DataBase string
-// 	Offset   string
-// 	IsActive bool
-// }
-
 // структура возвращается из монго
 type StateMess struct {
 	oid      string
@@ -16,18 +9,22 @@ type StateMess struct {
 	IsActive bool
 }
 
+// Структура для отправки сообщений в каналах между горутиной состояния
+// и горутиной MongoDB
 type MessCommand struct {
 	Info  string
 	Data  StateMess
 	Error interface{}
 }
 
+// Структура для передачи сообщений из горутины с синхронизацией в горутину состояния.
 type syncMessChan struct {
 	Offset string
 	Error  interface{}
 	id     string
 }
 
+// Структура для хранении информации о синхронизации таблиц в программе.
 type StateSyncStorage struct {
 	id        string
 	table     string
@@ -40,8 +37,3 @@ type StateSyncStorage struct {
 	dateStart interface{}
 	dateEnd   interface{}
 }
-
-// type MessAnswer struct {
-// 	Status string
-// 	Data   StateMess
-// }
