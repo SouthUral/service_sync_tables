@@ -1,5 +1,29 @@
 package main
 
+// Канал для отправки сообщения в State
+type StateAPIChan chan APImessage
+
+// Структура для упаковки сообщения для State из API
+type APImessage struct {
+	message string
+	ApiChan APImessChan
+}
+
+// Канал для возврата сообщения из State в Api
+type APImessChan chan StateAnswer
+
+// Структура в которой содержится ответ для API запроса от State
+type StateAnswer struct {
+	Err  interface{}
+	Data map[string]interface{}
+}
+
+// Структура для возврата ошибки клиенту
+type ErrorResponse struct {
+	Status bool        `json:"status"`
+	Error  interface{} `json:"error"`
+}
+
 // структура возвращается из монго
 type StateMess struct {
 	oid      string

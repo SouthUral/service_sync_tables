@@ -8,18 +8,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const (
-	StatusActive   = 0
-	StatusInactive = 1
-	InputData      = "input_data"
-	GetAll         = "get_all"
-	UpdateData     = "update_data"
-	DropCollection = "drop_collection"
-	DropData       = "drop_data"
-	Stop           = "stop"
-	Continue       = "continue"
-)
-
 type State struct {
 	table        string
 	status       int
@@ -27,15 +15,17 @@ type State struct {
 	mdbInput     chan MessCommand
 	mdbOutput    chan MessCommand
 	syncOutput   chan syncMessChan
+	ApiInputCh   StateAPIChan
 	stateStorage map[string]StateSyncStorage
 }
 
 // создает структуру State и запускает горутину StateWorker
-func InitState(mongoChInput chan MessCommand, mongoChOutput chan MessCommand) {
+func InitState(mongoChInput chan MessCommand, mongoChOutput chan MessCommand, ApiCh StateAPIChan) {
 
 	w_state := State{
 		mdbInput:     mongoChInput,
 		mdbOutput:    mongoChOutput,
+		ApiInputCh:   ApiCh,
 		stateStorage: make(map[string]StateSyncStorage),
 	}
 	go w_state.StateWorker()
@@ -57,8 +47,14 @@ func (state *State) StateWorker() {
 			state.MongoWorker(mess)
 		case mess := <-state.syncOutput:
 			state.handlerSyncThreads(mess)
+		case mess := <-state.ApiInputCh:
+			state.ApiHandler(mess)
 		}
 	}
+}
+
+func (state *State) ApiHandler(mess APImessage) {
+
 }
 
 // обработчик для сообщений которые приходят из горутин
