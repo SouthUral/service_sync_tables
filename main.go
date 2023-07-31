@@ -8,7 +8,7 @@ import (
 
 // запускает читает переменные окружения и запускает горутины
 func main() {
-	log.SetLevel(log.DebugLevel)
+	log.SetLevel(log.InfoLevel)
 
 	chan_mongo_input := make(chan MessCommand, 100)
 	chan_mongo_output := make(chan MessCommand, 100)

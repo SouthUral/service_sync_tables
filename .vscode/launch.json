@@ -12,6 +12,7 @@
             "program": "${fileDirname}",
             "args": ["--configFile", "config.json"],
             "env": {
+                "SERVER_PORT": "3000",
                 "MONGO_HOST": "localhost",
                 "MONGO_PORT": "9000",
                 "MONGO_COLLECTION": "test_collection",

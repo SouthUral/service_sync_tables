@@ -16,7 +16,7 @@ type State struct {
 	mdbOutput    chan MessCommand
 	syncOutput   chan syncMessChan
 	ApiInputCh   StateAPIChan
-	stateStorage map[string]StateSyncStorage
+	stateStorage StateStorage
 }
 
 // создает структуру State и запускает горутину StateWorker
@@ -53,7 +53,15 @@ func (state *State) StateWorker() {
 	}
 }
 
+// Функция для обработки сообщений из API
 func (state *State) ApiHandler(mess APImessage) {
+	switch mess.message {
+	case GetAll:
+		mess.ApiChan <- StateAnswer{
+			Err:  nil,
+			Data: state.stateStorage,
+		}
+	}
 
 }
 
@@ -61,20 +69,21 @@ func (state *State) ApiHandler(mess APImessage) {
 func (state *State) handlerSyncThreads(mess syncMessChan) {
 	itemSync := state.stateStorage[mess.id]
 	if mess.Error != nil {
-		itemSync.err = mess.Error
+		itemSync.Err = mess.Error
 		log.Error(mess.Error)
 		return
 	}
-	itemSync.offset = mess.Offset
-	itemSync.isSave = false
+	itemSync.Offset = mess.Offset
+	itemSync.IsSave = false
+	state.stateStorage[mess.id] = itemSync
 	state.mdbInput <- MessCommand{
 		Info: UpdateData,
 		Data: StateMess{
-			oid:      itemSync.id,
-			DataBase: itemSync.dataBase,
-			Table:    itemSync.table,
-			Offset:   fmt.Sprintf("%s", itemSync.offset),
-			IsActive: itemSync.isActive,
+			oid:      itemSync.Id,
+			DataBase: itemSync.DataBase,
+			Table:    itemSync.Table,
+			Offset:   fmt.Sprintf("%s", itemSync.Offset),
+			IsActive: itemSync.IsActive,
 		},
 	}
 	log.Debug("Данные из горутины отправлены на сохранение в MongoDB")
@@ -99,13 +108,15 @@ func (state *State) mdbUpdateData(mess MessCommand) {
 	if mess.Error != nil {
 		log.Error("Данные не обновлены в Mongo: ", mess.Error)
 		// добавляет данные об ошибке в хранилище
-		itemSync.err = mess.Error
-		itemSync.isSave = false
-		itemSync.dateEnd = time.Now()
+		itemSync.Err = mess.Error
+		itemSync.IsSave = false
+		itemSync.DateEnd = time.Now()
 		// отправляет сообщение горутине об остановке
 		itemSync.syncChan <- Stop
 		return
 	}
+	itemSync.IsSave = true
+	state.stateStorage[id] = itemSync
 	// если данные обновлены то в горутину отпрвляется сообщение о продолжении работы
 	itemSync.syncChan <- Continue
 }
@@ -144,16 +155,16 @@ func (state *State) InitSyncT(data StateMess) {
 	// создает новую запись в словаре stateStorage
 	// id := fmt.Sprintf("%s", data.oid)
 	state.stateStorage[data.oid] = StateSyncStorage{
-		id:        data.oid,
-		table:     data.Table,
-		dataBase:  data.DataBase,
-		offset:    data.Offset,
-		err:       nil,
-		isSave:    true,
-		isActive:  true,
+		Id:        data.oid,
+		Table:     data.Table,
+		DataBase:  data.DataBase,
+		Offset:    data.Offset,
+		Err:       nil,
+		IsSave:    true,
+		IsActive:  true,
 		syncChan:  syncInput,
-		dateStart: time.Now(),
-		dateEnd:   nil,
+		DateStart: time.Now(),
+		DateEnd:   nil,
 	}
 	log.Debug("Данные записаны в локальное хранение")
 	log.Debug(fmt.Sprintf("%+v\n", state.stateStorage[data.oid]))
@@ -182,7 +193,7 @@ func SyncTables(data StateMess, inputChan chan string, outputChan chan syncMessC
 		outputChan <- test_answer
 		log.Debug("Сообщение отправлено, offset: ", newOffset)
 		answer = <-inputChan
-		time.Sleep(1 * time.Millisecond)
+		time.Sleep(2 * time.Second)
 		newOffset++
 	}
 	// close(outputChan)

@@ -16,7 +16,7 @@ type Server struct {
 // инициализатор go сервера
 func InitServer(OutPutChan StateAPIChan) {
 	srv := Server{
-		Port:     getEnv("SERVER_PORT"),
+		Port:     ":" + getEnv("SERVER_PORT"),
 		OutputCh: OutPutChan,
 	}
 	go srv.StartServer()

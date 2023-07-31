@@ -15,7 +15,7 @@ type APImessChan chan StateAnswer
 // Структура в которой содержится ответ для API запроса от State
 type StateAnswer struct {
 	Err  interface{}
-	Data map[string]interface{}
+	Data StateStorage
 }
 
 // Структура для возврата ошибки клиенту
@@ -48,16 +48,18 @@ type syncMessChan struct {
 	id     string
 }
 
+type StateStorage map[string]StateSyncStorage
+
 // Структура для хранении информации о синхронизации таблиц в программе.
 type StateSyncStorage struct {
-	id        string
-	table     string
-	dataBase  string
-	offset    interface{}
-	err       interface{}
-	isSave    bool
-	isActive  bool
+	Id        string
+	Table     string
+	DataBase  string
+	Offset    interface{}
+	Err       interface{}
+	IsSave    bool
+	IsActive  bool
 	syncChan  chan string
-	dateStart interface{}
-	dateEnd   interface{}
+	DateStart interface{}
+	DateEnd   interface{}
 }
