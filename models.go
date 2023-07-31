@@ -52,14 +52,14 @@ type StateStorage map[string]StateSyncStorage
 
 // Структура для хранении информации о синхронизации таблиц в программе.
 type StateSyncStorage struct {
-	Id        string
-	Table     string
-	DataBase  string
-	Offset    interface{}
-	Err       interface{}
-	IsSave    bool
-	IsActive  bool
+	Id        string      `json:"id"`
+	Table     string      `json:"table"`
+	DataBase  string      `json:"data_base"`
+	Offset    interface{} `json:"offset"`
+	Err       interface{} `json:"error"`
+	IsSave    bool        `json:"is_save"`
+	IsActive  bool        `json:"is_active"`
 	syncChan  chan string
-	DateStart interface{}
-	DateEnd   interface{}
+	DateStart interface{} `json:"date_start"`
+	DateEnd   interface{} `json:"date_end"`
 }
