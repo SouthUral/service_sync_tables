@@ -9,13 +9,15 @@ import (
 )
 
 type State struct {
-	table        string
-	status       int
-	mongoError   interface{}
-	mdbInput     chan MessCommand
-	mdbOutput    chan MessCommand
-	syncOutput   chan syncMessChan
-	ApiInputCh   StateAPIChan
+	table      string
+	status     int
+	mongoError interface{}
+	mdbInput   chan MessCommand
+	mdbOutput  chan MessCommand
+	syncOutput chan syncMessChan
+	ApiInputCh StateAPIChan
+	// если нужно отправить StateStorage в целиком в другую горутину
+	// то нужно отправлять глубокую копию StateStorage иначе будет состояние гонки
 	stateStorage StateStorage
 }
 
@@ -55,7 +57,7 @@ func (state *State) StateWorker() {
 
 // Функция для обработки сообщений из API
 func (state *State) ApiHandler(mess APImessage) {
-	switch mess.message {
+	switch mess.Message {
 	case GetAll:
 		mess.ApiChan <- StateAnswer{
 			Err:  nil,

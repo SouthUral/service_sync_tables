@@ -5,8 +5,15 @@ type StateAPIChan chan APImessage
 
 // Структура для упаковки сообщения для State из API
 type APImessage struct {
-	message string
+	Data    InputDataApi
+	Message string
 	ApiChan APImessChan
+}
+
+type InputDataApi struct {
+	Table    string
+	DataBase string
+	IsActive bool
 }
 
 // Канал для возврата сообщения из State в Api
