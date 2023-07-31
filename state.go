@@ -26,7 +26,7 @@ func InitState(mongoChInput chan MessCommand, mongoChOutput chan MessCommand, Ap
 		mdbInput:     mongoChInput,
 		mdbOutput:    mongoChOutput,
 		ApiInputCh:   ApiCh,
-		stateStorage: make(map[string]StateSyncStorage),
+		stateStorage: make(StateStorage),
 	}
 	go w_state.StateWorker()
 }
@@ -59,7 +59,7 @@ func (state *State) ApiHandler(mess APImessage) {
 	case GetAll:
 		mess.ApiChan <- StateAnswer{
 			Err:  nil,
-			Data: state.stateStorage,
+			Data: CopyMap(state.stateStorage),
 		}
 	}
 
@@ -193,7 +193,7 @@ func SyncTables(data StateMess, inputChan chan string, outputChan chan syncMessC
 		outputChan <- test_answer
 		log.Debug("Сообщение отправлено, offset: ", newOffset)
 		answer = <-inputChan
-		time.Sleep(2 * time.Second)
+		time.Sleep(1 * time.Millisecond)
 		newOffset++
 	}
 	// close(outputChan)

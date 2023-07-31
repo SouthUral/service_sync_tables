@@ -23,3 +23,11 @@ func getEnvInt(key string) int {
 	}
 	return 0
 }
+
+func CopyMap(data StateStorage) StateStorage {
+	copyMap := make(StateStorage)
+	for key, value := range data {
+		copyMap[key] = value
+	}
+	return copyMap
+}
