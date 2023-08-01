@@ -26,6 +26,7 @@ func InitServer(OutPutChan StateAPIChan) {
 func (srv *Server) StartServer() {
 	http.HandleFunc("/all_sync", midlware(srv.AllSync))
 	http.HandleFunc("/add_sync", midlware(srv.AddNewSync))
+	http.HandleFunc("/stop_sync", midlware(srv.StopSync))
 	http.ListenAndServe(srv.Port, nil)
 
 }
@@ -48,6 +49,30 @@ func (srv *Server) AllSync(w http.ResponseWriter, r *http.Request) {
 	JsonWriter(w, answ, http.StatusOK)
 	log.Info("all_sync request processed")
 
+}
+
+// Обработчик для остановки синхронизации
+func (srv *Server) StopSync(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		ErrorWriter(w, "Request error", http.StatusBadRequest)
+	}
+	var InpData InputDataApi
+	err := json.NewDecoder(r.Body).Decode(&InpData)
+	if err != nil {
+		JsonWriter(w, StateAnswer{Err: err.Error()}, http.StatusBadRequest)
+	}
+	newChan := make(APImessChan)
+	msg := APImessage{
+		Message: StopSync,
+		ApiChan: newChan,
+		Data:    InpData,
+	}
+	srv.OutputCh <- msg
+	log.Debug("Отправлено сообщение от API в STATE")
+	answ, _ := <-newChan
+	log.Debug("Получено сообщение от STATE")
+	JsonWriter(w, answ, http.StatusOK)
+	log.Info("StopSync request processed")
 }
 
 // Обработчик для добавления синхронизации

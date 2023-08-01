@@ -88,6 +88,20 @@ func (state *State) ApiHandler(mess APImessage) {
 		state.mdbInput <- messComand
 		// в словарь StorageChanI записывается канал, до момента получения ответа о записи из mdb
 		state.StorageChanI[key_sync] = mess.ApiChan
+	case StopSync:
+		key_sync := fmt.Sprintf("%s_%s", mess.Data.DataBase, mess.Data.Table)
+		itemSync, ok := state.stateStorage[key_sync]
+		if !ok {
+			ErrString := fmt.Sprintf("There is no such sync: %s", key_sync)
+			mess.ApiChan <- StateAnswer{
+				Err: ErrString,
+			}
+			log.Error(ErrString)
+			return
+		}
+		itemSync.IsActive = false
+		state.stateStorage[key_sync] = itemSync
+		state.StorageChanI[key_sync] = mess.ApiChan
 	}
 
 }
@@ -141,6 +155,20 @@ func (state *State) mdbUpdateData(mess MessCommand) {
 		state.stateStorage[key] = itemSync
 		// отправляет сообщение горутине об остановке
 		itemSync.syncChan <- Stop
+		return
+	}
+	// Останавливает синхронизацю если флаг IsActive false
+	if !itemSync.IsActive {
+		itemSync.IsSave = true
+		state.stateStorage[key] = itemSync
+		itemSync.syncChan <- Stop
+		answ := make(StateStorage)
+		answ[key] = itemSync
+		ch := state.StorageChanI[key]
+		ch <- StateAnswer{
+			Err:  nil,
+			Data: answ,
+		}
 		return
 	}
 	itemSync.IsSave = true

@@ -9,5 +9,6 @@ const (
 	DropCollection = "drop_collection"
 	DropData       = "drop_data"
 	Stop           = "stop"
+	StopSync       = "stop_sync"
 	Continue       = "continue"
 )
