@@ -9,13 +9,14 @@ import (
 )
 
 type State struct {
-	table      string
-	status     int
-	mongoError interface{}
-	mdbInput   chan MessCommand
-	mdbOutput  chan MessCommand
-	syncOutput chan syncMessChan
-	ApiInputCh StateAPIChan
+	table        string
+	status       int
+	mongoError   interface{}
+	StorageChanI StorageChanInput
+	mdbInput     chan MessCommand
+	mdbOutput    chan MessCommand
+	syncOutput   chan syncMessChan
+	ApiInputCh   StateAPIChan
 	// если нужно отправить StateStorage в целиком в другую горутину
 	// то нужно отправлять глубокую копию StateStorage иначе будет состояние гонки
 	stateStorage StateStorage
@@ -25,6 +26,7 @@ type State struct {
 func InitState(mongoChInput chan MessCommand, mongoChOutput chan MessCommand, ApiCh StateAPIChan) {
 
 	w_state := State{
+		StorageChanI: make(StorageChanInput),
 		mdbInput:     mongoChInput,
 		mdbOutput:    mongoChOutput,
 		ApiInputCh:   ApiCh,
@@ -63,6 +65,29 @@ func (state *State) ApiHandler(mess APImessage) {
 			Err:  nil,
 			Data: CopyMap(state.stateStorage),
 		}
+	case InputData:
+		key_sync := fmt.Sprintf("%s_%s", mess.Data.DataBase, mess.Data.Table)
+		_, ok := state.stateStorage[key_sync]
+		if ok {
+			ErrString := fmt.Sprintf("Sync '%s' is already", key_sync)
+			mess.ApiChan <- StateAnswer{
+				Err: ErrString,
+			}
+			log.Error(ErrString)
+			return
+		}
+		messComand := MessCommand{
+			Info: InputData,
+			Data: StateMess{
+				Table:    mess.Data.Table,
+				DataBase: mess.Data.DataBase,
+				Offset:   mess.Data.Offset,
+				IsActive: mess.Data.IsActive,
+			},
+		}
+		state.mdbInput <- messComand
+		// в словарь StorageChanI записывается канал, до момента получения ответа о записи из mdb
+		state.StorageChanI[key_sync] = mess.ApiChan
 	}
 
 }
@@ -105,30 +130,38 @@ func (state *State) MongoWorker(mess MessCommand) {
 
 // метод обработчик для сообщений UpdateData из модуля MongoDB
 func (state *State) mdbUpdateData(mess MessCommand) {
-	id := fmt.Sprintf("%s", mess.Data.oid)
-	itemSync := state.stateStorage[id]
+	key := fmt.Sprintf("%s_%s", mess.Data.DataBase, mess.Data.Table)
+	itemSync := state.stateStorage[key]
 	if mess.Error != nil {
 		log.Error("Данные не обновлены в Mongo: ", mess.Error)
 		// добавляет данные об ошибке в хранилище
 		itemSync.Err = mess.Error
 		itemSync.IsSave = false
 		itemSync.DateEnd = time.Now()
+		state.stateStorage[key] = itemSync
 		// отправляет сообщение горутине об остановке
 		itemSync.syncChan <- Stop
 		return
 	}
 	itemSync.IsSave = true
-	state.stateStorage[id] = itemSync
+	state.stateStorage[key] = itemSync
 	// если данные обновлены то в горутину отпрвляется сообщение о продолжении работы
 	itemSync.syncChan <- Continue
 }
 
+// Этот метод запускает горутины синхронизаций!!!
 // обработчик сообщений из монго, работает с сообщниями InputData
 // запуск горутины произойдет только после записи о синхронизации в mongo
 func (state *State) mdbInputData(mess MessCommand) {
+	StorageChanKey := fmt.Sprintf("%s_%s", mess.Data.DataBase, mess.Data.Table)
+	ch := state.StorageChanI[StorageChanKey]
 	if mess.Error != nil {
 		log.Error("Данные не добавлены в Mongo: ", mess.Error)
 		// отправка сообщения в канал REST о неудачном запуске
+		ch <- StateAnswer{
+			Err: mess.Error,
+		}
+		delete(state.StorageChanI, StorageChanKey)
 		return
 	}
 	if mess.Data.IsActive {
@@ -156,7 +189,8 @@ func (state *State) InitSyncT(data StateMess) {
 	go SyncTables(data, syncInput, state.syncOutput)
 	// создает новую запись в словаре stateStorage
 	// id := fmt.Sprintf("%s", data.oid)
-	state.stateStorage[data.oid] = StateSyncStorage{
+	key := fmt.Sprintf("%s_%s", data.DataBase, data.Table)
+	state.stateStorage[key] = StateSyncStorage{
 		Id:        data.oid,
 		Table:     data.Table,
 		DataBase:  data.DataBase,
@@ -167,6 +201,18 @@ func (state *State) InitSyncT(data StateMess) {
 		syncChan:  syncInput,
 		DateStart: time.Now(),
 		DateEnd:   nil,
+	}
+
+	StorageChanKey := fmt.Sprintf("%s_%s", data.DataBase, data.Table)
+	ch, ok := state.StorageChanI[StorageChanKey]
+	if ok {
+		answerMap := make(StateStorage)
+		answerMap[key] = state.stateStorage[key]
+		ch <- StateAnswer{
+			Err:  nil,
+			Data: answerMap,
+		}
+		delete(state.StorageChanI, StorageChanKey)
 	}
 	log.Debug("Данные записаны в локальное хранение")
 	log.Debug(fmt.Sprintf("%+v\n", state.stateStorage[data.oid]))
@@ -189,13 +235,13 @@ func SyncTables(data StateMess, inputChan chan string, outputChan chan syncMessC
 
 		test_answer := syncMessChan{
 			Offset: strconv.Itoa(newOffset),
-			id:     fmt.Sprintf("%s", data.oid),
+			id:     fmt.Sprintf("%s_%s", data.DataBase, data.Table),
 			Error:  err,
 		}
 		outputChan <- test_answer
 		log.Debug("Сообщение отправлено, offset: ", newOffset)
 		answer = <-inputChan
-		time.Sleep(1 * time.Millisecond)
+		time.Sleep(1 * time.Second)
 		newOffset++
 	}
 	// close(outputChan)

@@ -19,5 +19,5 @@ func main() {
 	InitState(chan_mongo_input, chan_mongo_output, chan_api_state)
 
 	log.Info("Server is starting")
-	time.Sleep(150 * time.Second)
+	time.Sleep(1000 * time.Second)
 }

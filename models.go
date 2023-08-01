@@ -10,10 +10,17 @@ type APImessage struct {
 	ApiChan APImessChan
 }
 
+// словарь для хранения обратного канала API до момента пока придет ответ от mdb
+// о добавлении в Mongo информации о новой синхронизации
+// хранимый канал нужен для ответа клиенту об усппешном добавлении
+type StorageChanInput map[string]APImessChan
+
+// Структура для получения и расшифровки данных от клиента
 type InputDataApi struct {
-	Table    string
-	DataBase string
-	IsActive bool
+	Table    string `json:"table"`
+	DataBase string `json:"data_base"`
+	IsActive bool   `json:"is_active"`
+	Offset   string `json:"offset"`
 }
 
 // Канал для возврата сообщения из State в Api
@@ -24,6 +31,8 @@ type StateAnswer struct {
 	Err  interface{}
 	Data StateStorage
 }
+
+type StateStorage map[string]StateSyncStorage
 
 // Структура для возврата ошибки клиенту
 type ErrorResponse struct {
@@ -54,8 +63,6 @@ type syncMessChan struct {
 	Error  interface{}
 	id     string
 }
-
-type StateStorage map[string]StateSyncStorage
 
 // Структура для хранении информации о синхронизации таблиц в программе.
 type StateSyncStorage struct {

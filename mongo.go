@@ -181,7 +181,7 @@ func (mdb *MongoBase) inputData(data StateMess, colection *mongo.Collection) (in
 	resMess = insertResult.InsertedID
 
 	fmt.Println("Inserted a single document: ", resMess)
-	id := fmt.Sprintf("%s", resMess)
+	id := getId(fmt.Sprintf("%s", resMess))
 	// if err != nil {
 	// 	log.Error(err)
 	// }
@@ -243,10 +243,7 @@ func (mdb *MongoBase) getAllData(collection *mongo.Collection) ([]*StateMess, in
 			return res, err
 		}
 		oid, _ := bitem["_id"]
-		re := regexp.MustCompile(`"([a-fA-F0-9]{24})"`)
-		match := re.FindStringSubmatch(fmt.Sprintf("%s", oid))
-		id := fmt.Sprintf("%s", match[1])
-		elem.oid = id
+		elem.oid = getId(fmt.Sprintf("%s", oid))
 		res = append(res, &elem)
 	}
 	return res, nil
@@ -279,4 +276,11 @@ func (mdb *MongoBase) connectMongo() interface{} {
 	}
 
 	return nil
+}
+
+func getId(oid string) string {
+	re := regexp.MustCompile(`"([a-fA-F0-9]{24})"`)
+	match := re.FindStringSubmatch(oid)
+	id := fmt.Sprintf("%s", match[1])
+	return id
 }

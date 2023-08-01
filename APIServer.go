@@ -25,6 +25,7 @@ func InitServer(OutPutChan StateAPIChan) {
 // go сервер
 func (srv *Server) StartServer() {
 	http.HandleFunc("/all_sync", midlware(srv.AllSync))
+	http.HandleFunc("/add_sync", midlware(srv.AddNewSync))
 	http.ListenAndServe(srv.Port, nil)
 
 }
@@ -70,7 +71,7 @@ func (srv *Server) AddNewSync(w http.ResponseWriter, r *http.Request) {
 	answ, _ := <-newChan
 	log.Debug("Получено сообщение от STATE")
 	JsonWriter(w, answ, http.StatusOK)
-	log.Info("all_sync request processed")
+	log.Info("AddNewSync request processed")
 
 }
 
