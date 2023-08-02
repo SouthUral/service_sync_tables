@@ -192,6 +192,7 @@ func (state *State) mdbInputData(mess MessCommand) {
 		delete(state.StorageChanI, StorageChanKey)
 		return
 	}
+	state.AddInfoToStorage(mess.Data)
 	if mess.Data.IsActive {
 		state.InitSyncT(mess.Data)
 	}
@@ -204,19 +205,14 @@ func (state *State) mdbGetAll(mess MessCommand) {
 		state.mongoError = mess.Error
 		return
 	}
-	// если статус синхронизации True то данные передаются функции для запуска горутины
+	state.AddInfoToStorage(mess.Data)
 	if mess.Data.IsActive {
 		state.InitSyncT(mess.Data)
 	}
 }
 
-// функция для запуска горутин синхронизации
-func (state *State) InitSyncT(data StateMess) {
-	// создает канал для связи с горутиной, запускает горутину и записывает канал в структуру по id
-	syncInput := make(chan string)
-	go SyncTables(data, syncInput, state.syncOutput)
-	// создает новую запись в словаре stateStorage
-	// id := fmt.Sprintf("%s", data.oid)
+// создает новую запись в словаре stateStorage
+func (state *State) AddInfoToStorage(data StateMess) {
 	key := fmt.Sprintf("%s_%s", data.DataBase, data.Table)
 	state.stateStorage[key] = StateSyncStorage{
 		Id:        data.oid,
@@ -225,25 +221,35 @@ func (state *State) InitSyncT(data StateMess) {
 		Offset:    data.Offset,
 		Err:       nil,
 		IsSave:    true,
-		IsActive:  true,
-		syncChan:  syncInput,
+		IsActive:  data.IsActive,
 		DateStart: time.Now(),
 		DateEnd:   nil,
 	}
+	log.Debug("Данные записаны в локальное хранение")
+	log.Debug(fmt.Sprintf("%+v\n", state.stateStorage[data.oid]))
+}
 
-	StorageChanKey := fmt.Sprintf("%s_%s", data.DataBase, data.Table)
-	ch, ok := state.StorageChanI[StorageChanKey]
+// функция для запуска горутин синхронизации
+func (state *State) InitSyncT(data StateMess) {
+	// создает канал для связи с горутиной, запускает горутину и записывает канал в структуру по id
+	StorageKey := fmt.Sprintf("%s_%s", data.DataBase, data.Table)
+	syncInput := make(chan string)
+	go SyncTables(data, syncInput, state.syncOutput)
+	SyncData := state.stateStorage[StorageKey]
+	SyncData.syncChan = syncInput
+	state.stateStorage[StorageKey] = SyncData
+
+	// отправляет сообщение API если есть канал для этого
+	ch, ok := state.StorageChanI[StorageKey]
 	if ok {
 		answerMap := make(StateStorage)
-		answerMap[key] = state.stateStorage[key]
+		answerMap[StorageKey] = state.stateStorage[StorageKey]
 		ch <- StateAnswer{
 			Err:  nil,
 			Data: answerMap,
 		}
-		delete(state.StorageChanI, StorageChanKey)
+		delete(state.StorageChanI, StorageKey)
 	}
-	log.Debug("Данные записаны в локальное хранение")
-	log.Debug(fmt.Sprintf("%+v\n", state.stateStorage[data.oid]))
 }
 
 // функция запускается в отдельном потоке, ее задача подключиться к БД1 и БД2 и синхронизировать их
