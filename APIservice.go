@@ -39,6 +39,7 @@ func ErrorWriter(w http.ResponseWriter, err string, status int) {
 func GetMethod(w http.ResponseWriter, r *http.Request, mess string, OutputCh StateAPIChan) {
 	if r.Method != http.MethodGet {
 		ErrorWriter(w, "Request error", http.StatusBadRequest)
+		return
 	}
 	newChan := make(APImessChan)
 	msg := APImessage{
@@ -54,6 +55,7 @@ func GetMethod(w http.ResponseWriter, r *http.Request, mess string, OutputCh Sta
 func PostMethod(w http.ResponseWriter, r *http.Request, mess string, OutputCh StateAPIChan) {
 	if r.Method != http.MethodPost {
 		ErrorWriter(w, "Request error", http.StatusBadRequest)
+		return
 	}
 	var InpData InputDataApi
 	err := json.NewDecoder(r.Body).Decode(&InpData)

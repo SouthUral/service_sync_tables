@@ -141,9 +141,9 @@ func (mdb *MongoBase) updateData(data StateMess, collection *mongo.Collection) i
 		"database": data.DataBase}
 	updated := bson.M{
 		"$set": bson.M{
-			"id": data.oid,
-			// "table":    data.Table,
-			// "database": data.DataBase,
+			"id":       data.oid,
+			"table":    data.Table,
+			"database": data.DataBase,
 			"offset":   data.Offset,
 			"isactive": data.IsActive,
 		},

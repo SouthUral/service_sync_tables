@@ -102,6 +102,21 @@ func (state *State) ApiHandler(mess APImessage) {
 		itemSync.IsActive = false
 		state.stateStorage[key_sync] = itemSync
 		state.StorageChanI[key_sync] = mess.ApiChan
+	case StartSync:
+		key_sync := fmt.Sprintf("%s_%s", mess.Data.DataBase, mess.Data.Table)
+		itemSync, ok := state.stateStorage[key_sync]
+		if !ok {
+			ErrString := fmt.Sprintf("There is no such sync: %s", key_sync)
+			mess.ApiChan <- StateAnswer{
+				Err: ErrString,
+			}
+			log.Error(ErrString)
+			return
+		}
+		itemSync.IsActive = true
+		state.stateStorage[key_sync] = itemSync
+		state.StorageChanI[key_sync] = mess.ApiChan
+		state.updateDataMongo(key_sync)
 	}
 
 }
@@ -117,7 +132,16 @@ func (state *State) handlerSyncThreads(mess syncMessChan) {
 	itemSync.Offset = mess.Offset
 	itemSync.IsSave = false
 	state.stateStorage[mess.id] = itemSync
-	state.mdbInput <- MessCommand{
+	state.updateDataMongo(mess.id)
+	log.Debug("Данные из горутины отправлены на сохранение в MongoDB")
+}
+
+// Метод для отправки изменений в состоянии в Mongo.
+// Для отправки изменений нужно сначала записать изменения в локальный map stateStorage
+// далее вызвать этот метод передав в него ключ
+func (state *State) updateDataMongo(id_sync string) {
+	itemSync := state.stateStorage[id_sync]
+	newMess := MessCommand{
 		Info: UpdateData,
 		Data: StateMess{
 			oid:      itemSync.Id,
@@ -127,7 +151,7 @@ func (state *State) handlerSyncThreads(mess syncMessChan) {
 			IsActive: itemSync.IsActive,
 		},
 	}
-	log.Debug("Данные из горутины отправлены на сохранение в MongoDB")
+	state.mdbInput <- newMess
 }
 
 // Обработчик сообщений приходящих от модуля MongoDB
@@ -158,10 +182,11 @@ func (state *State) mdbUpdateData(mess MessCommand) {
 		return
 	}
 	// Останавливает синхронизацю если флаг IsActive false
-	if !itemSync.IsActive {
+	if itemSync.IsActive == false {
 		itemSync.IsSave = true
 		state.stateStorage[key] = itemSync
 		itemSync.syncChan <- Stop
+		itemSync.syncChan = nil
 		answ := make(StateStorage)
 		answ[key] = itemSync
 		ch := state.StorageChanI[key]
@@ -169,12 +194,17 @@ func (state *State) mdbUpdateData(mess MessCommand) {
 			Err:  nil,
 			Data: answ,
 		}
+		state.stateStorage[key] = itemSync
 		return
 	}
 	itemSync.IsSave = true
 	state.stateStorage[key] = itemSync
 	// если данные обновлены то в горутину отпрвляется сообщение о продолжении работы
-	itemSync.syncChan <- Continue
+	if itemSync.syncChan != nil {
+		itemSync.syncChan <- Continue
+	} else {
+		state.InitSyncT(mess.Data)
+	}
 }
 
 // Этот метод запускает горутины синхронизаций!!!

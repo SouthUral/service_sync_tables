@@ -11,4 +11,5 @@ const (
 	Stop           = "stop"
 	StopSync       = "stop_sync"
 	Continue       = "continue"
+	StartSync      = "start_sync"
 )
