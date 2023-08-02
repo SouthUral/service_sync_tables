@@ -99,6 +99,12 @@ func (state *State) ApiHandler(mess APImessage) {
 			log.Error(ErrString)
 			return
 		}
+		if itemSync.IsActive == false {
+			mess.ApiChan <- StateAnswer{
+				Err: "sync is already stop",
+			}
+			return
+		}
 		itemSync.IsActive = false
 		state.stateStorage[key_sync] = itemSync
 		state.StorageChanI[key_sync] = mess.ApiChan
@@ -111,6 +117,12 @@ func (state *State) ApiHandler(mess APImessage) {
 				Err: ErrString,
 			}
 			log.Error(ErrString)
+			return
+		}
+		if itemSync.IsActive == true {
+			mess.ApiChan <- StateAnswer{
+				Err: "sync is already start",
+			}
 			return
 		}
 		itemSync.IsActive = true
@@ -172,38 +184,50 @@ func (state *State) mdbUpdateData(mess MessCommand) {
 	itemSync := state.stateStorage[key]
 	if mess.Error != nil {
 		log.Error("Данные не обновлены в Mongo: ", mess.Error)
-		// добавляет данные об ошибке в хранилище
-		itemSync.Err = mess.Error
-		itemSync.IsSave = false
-		itemSync.DateEnd = time.Now()
-		state.stateStorage[key] = itemSync
-		// отправляет сообщение горутине об остановке
-		itemSync.syncChan <- Stop
+		state.StopSyncState(key, mess.Error)
 		return
 	}
+
 	// Останавливает синхронизацю если флаг IsActive false
 	if itemSync.IsActive == false {
-		itemSync.IsSave = true
-		state.stateStorage[key] = itemSync
-		itemSync.syncChan <- Stop
-		itemSync.syncChan = nil
-		answ := make(StateStorage)
-		answ[key] = itemSync
-		ch := state.StorageChanI[key]
-		ch <- StateAnswer{
-			Err:  nil,
-			Data: answ,
-		}
-		state.stateStorage[key] = itemSync
+		state.StopSyncState(key, nil)
 		return
 	}
+
 	itemSync.IsSave = true
 	state.stateStorage[key] = itemSync
+
 	// если данные обновлены то в горутину отпрвляется сообщение о продолжении работы
 	if itemSync.syncChan != nil {
 		itemSync.syncChan <- Continue
 	} else {
 		state.InitSyncT(mess.Data)
+	}
+}
+
+// Метод для остановки синхронизации
+func (state *State) StopSyncState(key string, err interface{}) {
+	itemSync := state.stateStorage[key]
+	itemSync.syncChan <- Stop
+	itemSync.syncChan = nil
+	itemSync.DateEnd = time.Now()
+
+	if err != nil {
+		itemSync.Err = err
+	} else {
+		itemSync.IsSave = true
+	}
+
+	state.stateStorage[key] = itemSync
+
+	ch, ok := state.StorageChanI[key]
+	if ok {
+		answ := make(StateStorage)
+		answ[key] = itemSync
+		ch <- StateAnswer{
+			Err:  nil,
+			Data: answ,
+		}
 	}
 }
 
