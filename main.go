@@ -6,6 +6,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// @title sync_service
+// @version 1.0
+// @description This is a sample server Petstore server.
+
+// @host localhost:3000
+// @BasePath /
+
 // запускает читает переменные окружения и запускает горутины
 func main() {
 	log.SetLevel(log.InfoLevel)

@@ -30,24 +30,39 @@ func (srv *Server) StartServer() {
 
 }
 
+// @Summary allSync
+// @Tags Get
+// @Description метод для получения всех синхронизаций
 // Обработчик для запроса на все синхронизации в сервисе
 func (srv *Server) allSync(w http.ResponseWriter, r *http.Request) {
 	GetMethod(w, r, GetAll, srv.OutputCh)
 	log.Info("all_sync request processed")
 }
 
+// @Summary stopSync
+// @Tags Post
+// @Description метод для остановки синхронизации
+// @Param input body InputDataApi
 // Обработчик для остановки синхронизации
 func (srv *Server) stopSync(w http.ResponseWriter, r *http.Request) {
 	PostMethod(w, r, StopSync, srv.OutputCh)
 	log.Info("StopSync request processed")
 }
 
+// @Summary addNewSync
+// @Tags Post
+// @Description метод для добавления новой синхронизации
+// @Param input body InputDataApi
 // Обработчик для добавления синхронизации
 func (srv *Server) addNewSync(w http.ResponseWriter, r *http.Request) {
 	PostMethod(w, r, InputData, srv.OutputCh)
 	log.Info("AddNewSync request processed")
 }
 
+// @Summary startSync
+// @Tags Post
+// @Description метод для старта приостановленной синхронизации
+// @Param input body InputDataApi
 // Обработчик для старта остановленной синхронизации
 func (srv *Server) startSync(w http.ResponseWriter, r *http.Request) {
 	PostMethod(w, r, StartSync, srv.OutputCh)
