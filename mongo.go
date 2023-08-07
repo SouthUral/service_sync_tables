@@ -57,7 +57,6 @@ func (mdb *MongoBase) MongoMain(ch_input chan MessCommand, ch_output chan MessCo
 func (mdb *MongoBase) mongoWorker(ch_input chan MessCommand, ch_output chan MessCommand) {
 
 	// defer mdb.client.Disconnect(mdb.ctx)
-	// fmt.Printf("%T\n", mdb.client)
 
 	collection := mdb.client.Database(mdb.database).Collection(mdb.collection)
 

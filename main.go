@@ -4,7 +4,15 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	// _ "/home/vladimirkov/my_projects/service_sync_tables/docs"
 )
+
+// @title sync_service
+// @version 1.0
+// @description This is a sample server Petstore server.
+
+// @host localhost:3000
+// @BasePath /
 
 // запускает читает переменные окружения и запускает горутины
 func main() {
