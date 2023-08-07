@@ -4,6 +4,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	// _ "/home/vladimirkov/my_projects/service_sync_tables/docs"
 )
 
 // @title sync_service
