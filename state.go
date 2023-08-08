@@ -137,8 +137,7 @@ func (state *State) ApiHandler(mess APImessage) {
 func (state *State) handlerSyncThreads(mess syncMessChan) {
 	itemSync := state.stateStorage[mess.id]
 	if mess.Error != nil {
-		itemSync.Err = mess.Error
-		log.Error(mess.Error)
+		state.StopSyncState(mess.id, mess.Error, false)
 		return
 	}
 	itemSync.Offset = mess.Offset
@@ -184,13 +183,13 @@ func (state *State) mdbUpdateData(mess MessCommand) {
 	itemSync := state.stateStorage[key]
 	if mess.Error != nil {
 		log.Error("Данные не обновлены в Mongo: ", mess.Error)
-		state.StopSyncState(key, mess.Error)
+		state.StopSyncState(key, mess.Error, true)
 		return
 	}
 
 	// Останавливает синхронизацю если флаг IsActive false
 	if itemSync.IsActive == false {
-		state.StopSyncState(key, nil)
+		state.StopSyncState(key, nil, true)
 		return
 	}
 
@@ -206,9 +205,12 @@ func (state *State) mdbUpdateData(mess MessCommand) {
 }
 
 // Метод для остановки синхронизации
-func (state *State) StopSyncState(key string, err interface{}) {
+// param: activeChan
+func (state *State) StopSyncState(key string, err interface{}, activeChan bool) {
 	itemSync := state.stateStorage[key]
-	itemSync.syncChan <- Stop
+	if activeChan {
+		itemSync.syncChan <- Stop
+	}
 	itemSync.syncChan = nil
 	itemSync.DateEnd = time.Now()
 
@@ -317,6 +319,13 @@ func SyncTables(data StateMess, inputChan chan string, outputChan chan syncMessC
 	newOffset := intOffset + 1
 	if err != nil {
 		log.Error(err)
+		test_answer := syncMessChan{
+			Offset: "0",
+			id:     fmt.Sprintf("%s_%s", data.DataBase, data.Table),
+			Error:  err.Error(),
+		}
+		outputChan <- test_answer
+		return
 	}
 
 	for answer != Stop {
@@ -324,7 +333,7 @@ func SyncTables(data StateMess, inputChan chan string, outputChan chan syncMessC
 		test_answer := syncMessChan{
 			Offset: strconv.Itoa(newOffset),
 			id:     fmt.Sprintf("%s_%s", data.DataBase, data.Table),
-			Error:  err,
+			Error:  err.Error(),
 		}
 		outputChan <- test_answer
 		log.Debug("Сообщение отправлено, offset: ", newOffset)

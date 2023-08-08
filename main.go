@@ -3,18 +3,16 @@ package main
 import (
 	"time"
 
+	_ "github.com/SouthUral/service_sync_tables/docs"
 	log "github.com/sirupsen/logrus"
-	// _ "/home/vladimirkov/my_projects/service_sync_tables/docs"
 )
 
-// @title sync_service
-// @version 1.0
-// @description This is a sample server Petstore server.
+//	@title			sync_service
+//	@version		1.0
+//	@description	This is a sample server Petstore server.
 
-// @host localhost:3000
-// @BasePath /
-
-// запускает читает переменные окружения и запускает горутины
+//	@host		localhost:3000
+//	@BasePath	/
 func main() {
 	log.SetLevel(log.InfoLevel)
 
