@@ -1,0 +1,96 @@
+basePath: /
+definitions:
+  main.InputDataApi:
+    properties:
+      data_base:
+        type: string
+      is_active:
+        type: boolean
+      offset:
+        type: string
+      table:
+        type: string
+    type: object
+  main.StateStorage:
+    additionalProperties:
+      $ref: '#/definitions/main.StateSyncStorage'
+    type: object
+  main.StateSyncStorage:
+    properties:
+      data_base:
+        type: string
+      date_end: {}
+      date_start: {}
+      error: {}
+      id:
+        type: string
+      is_active:
+        type: boolean
+      is_save:
+        type: boolean
+      offset: {}
+      table:
+        type: string
+    type: object
+host: localhost:3000
+info:
+  contact: {}
+  description: This is a sample server Petstore server.
+  title: sync_service
+  version: "1.0"
+paths:
+  /add_sync:
+    post:
+      description: метод для добавления новой синхронизации
+      parameters:
+      - description: body example
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/main.InputDataApi'
+      responses: {}
+      summary: addNewSync
+      tags:
+      - Post
+  /all_sync:
+    get:
+      consumes:
+      - application/json
+      description: some description
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.StateStorage'
+      summary: allSync
+      tags:
+      - Get
+  /start_sync:
+    post:
+      description: метод для старта приостановленной синхронизации
+      parameters:
+      - description: body example
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/main.InputDataApi'
+      responses: {}
+      summary: startSync
+      tags:
+      - Post
+  /stop_sync:
+    post:
+      description: метод для остановки синхронизации
+      parameters:
+      - description: body example
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/main.InputDataApi'
+      responses: {}
+      summary: stopSync
+      tags:
+      - Post
+swagger: "2.0"
