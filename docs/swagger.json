@@ -8,7 +8,91 @@
     },
     "host": "localhost:3000",
     "basePath": "/",
-    "paths": {},
+    "paths": {
+        "/add_sync": {
+            "post": {
+                "description": "метод для добавления новой синхронизации",
+                "tags": [
+                    "Post"
+                ],
+                "summary": "addNewSync",
+                "parameters": [
+                    {
+                        "description": "body example",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/main.InputDataApi"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/all_sync": {
+            "get": {
+                "description": "some description",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Get"
+                ],
+                "summary": "allSync",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.StateStorage"
+                        }
+                    }
+                }
+            }
+        },
+        "/start_sync": {
+            "post": {
+                "description": "метод для старта приостановленной синхронизации",
+                "tags": [
+                    "Post"
+                ],
+                "summary": "startSync",
+                "parameters": [
+                    {
+                        "description": "body example",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/main.InputDataApi"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/stop_sync": {
+            "post": {
+                "description": "метод для остановки синхронизации",
+                "tags": [
+                    "Post"
+                ],
+                "summary": "stopSync",
+                "parameters": [
+                    {
+                        "description": "body example",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/main.InputDataApi"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        }
+    },
     "definitions": {
         "main.InputDataApi": {
             "type": "object",
@@ -22,6 +106,36 @@
                 "offset": {
                     "type": "string"
                 },
+                "table": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.StateStorage": {
+            "type": "object",
+            "additionalProperties": {
+                "$ref": "#/definitions/main.StateSyncStorage"
+            }
+        },
+        "main.StateSyncStorage": {
+            "type": "object",
+            "properties": {
+                "data_base": {
+                    "type": "string"
+                },
+                "date_end": {},
+                "date_start": {},
+                "error": {},
+                "id": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "is_save": {
+                    "type": "boolean"
+                },
+                "offset": {},
                 "table": {
                     "type": "string"
                 }
