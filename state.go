@@ -211,6 +211,7 @@ func (state *State) StopSyncState(key string, err interface{}, activeChan bool) 
 	if activeChan {
 		itemSync.syncChan <- Stop
 	}
+	itemSync.IsActive = false
 	itemSync.syncChan = nil
 	itemSync.DateEnd = time.Now()
 
@@ -333,7 +334,7 @@ func SyncTables(data StateMess, inputChan chan string, outputChan chan syncMessC
 		test_answer := syncMessChan{
 			Offset: strconv.Itoa(newOffset),
 			id:     fmt.Sprintf("%s_%s", data.DataBase, data.Table),
-			Error:  err.Error(),
+			Error:  nil,
 		}
 		outputChan <- test_answer
 		log.Debug("Сообщение отправлено, offset: ", newOffset)
