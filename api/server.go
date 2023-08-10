@@ -1,9 +1,10 @@
-package main
+package api
 
 import (
 	"net/http"
 
 	_ "github.com/SouthUral/service_sync_tables/docs"
+	tools "github.com/SouthUral/service_sync_tables/tools"
 
 	log "github.com/sirupsen/logrus"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
@@ -11,13 +12,13 @@ import (
 
 type Server struct {
 	Port     string
-	OutputCh StateAPIChan
+	OutputCh OutputAPIChan
 }
 
 // инициализатор go сервера
-func InitServer(OutPutChan StateAPIChan) {
+func InitServer(OutPutChan OutputAPIChan) {
 	srv := Server{
-		Port:     ":" + getEnv("SERVER_PORT"),
+		Port:     ":" + tools.GetEnv("SERVER_PORT"),
 		OutputCh: OutPutChan,
 	}
 	go srv.StartServer()

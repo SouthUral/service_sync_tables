@@ -1,4 +1,4 @@
-package main
+package mongodb
 
 import (
 	"context"
@@ -6,6 +6,8 @@ import (
 	"regexp"
 
 	"time"
+
+	tools "github.com/SouthUral/service_sync_tables/tools"
 
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
@@ -23,10 +25,10 @@ type MongoBase struct {
 }
 
 func (mdb *MongoBase) getMongoEnv() {
-	host := getEnv("MONGO_HOST")
-	port := getEnv("MONGO_PORT")
-	mdb.collection = getEnv("MONGO_COLLECTION")
-	mdb.database = getEnv("MONGO_DATABASE")
+	host := tools.GetEnv("MONGO_HOST")
+	port := tools.GetEnv("MONGO_PORT")
+	mdb.collection = tools.GetEnv("MONGO_COLLECTION")
+	mdb.database = tools.GetEnv("MONGO_DATABASE")
 	mdb.url = fmt.Sprintf("mongodb://%s:%s", host, port)
 }
 
@@ -140,7 +142,7 @@ func (mdb *MongoBase) updateData(data StateMess, collection *mongo.Collection) i
 		"database": data.DataBase}
 	updated := bson.M{
 		"$set": bson.M{
-			"id":       data.oid,
+			"id":       data.Oid,
 			"table":    data.Table,
 			"database": data.DataBase,
 			"offset":   data.Offset,
@@ -157,7 +159,7 @@ func (mdb *MongoBase) updateData(data StateMess, collection *mongo.Collection) i
 		return "updateData error"
 	}
 
-	log.Println("data updated: ", data.oid)
+	log.Println("data updated: ", data.Oid)
 	return nil
 
 }
@@ -185,7 +187,7 @@ func (mdb *MongoBase) inputData(data StateMess, colection *mongo.Collection) (in
 	// 	log.Error(err)
 	// }
 	DbObject = StateMess{
-		oid:      id,
+		Oid:      id,
 		Table:    data.Table,
 		DataBase: data.DataBase,
 		Offset:   data.Offset,
@@ -242,7 +244,7 @@ func (mdb *MongoBase) getAllData(collection *mongo.Collection) ([]*StateMess, in
 			return res, err
 		}
 		oid, _ := bitem["_id"]
-		elem.oid = getId(fmt.Sprintf("%s", oid))
+		elem.Oid = getId(fmt.Sprintf("%s", oid))
 		res = append(res, &elem)
 	}
 	return res, nil
