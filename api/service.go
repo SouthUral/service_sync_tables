@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"encoding/json"
@@ -36,12 +36,12 @@ func ErrorWriter(w http.ResponseWriter, err string, status int) {
 }
 
 // абстрактный метод для GET запросов
-func GetMethod(w http.ResponseWriter, r *http.Request, mess string, OutputCh StateAPIChan) {
+func GetMethod(w http.ResponseWriter, r *http.Request, mess string, OutputCh OutputAPIChan) {
 	if r.Method != http.MethodGet {
 		ErrorWriter(w, "Request error", http.StatusBadRequest)
 		return
 	}
-	newChan := make(APImessChan)
+	newChan := make(InputAPIChan)
 	msg := APImessage{
 		Message: mess,
 		ApiChan: newChan,
@@ -52,7 +52,7 @@ func GetMethod(w http.ResponseWriter, r *http.Request, mess string, OutputCh Sta
 }
 
 // абстрактный метод для POST запросов
-func PostMethod(w http.ResponseWriter, r *http.Request, mess string, OutputCh StateAPIChan) {
+func PostMethod(w http.ResponseWriter, r *http.Request, mess string, OutputCh OutputAPIChan) {
 	if r.Method != http.MethodPost {
 		ErrorWriter(w, "Request error", http.StatusBadRequest)
 		return
@@ -62,7 +62,7 @@ func PostMethod(w http.ResponseWriter, r *http.Request, mess string, OutputCh St
 	if err != nil {
 		JsonWriter(w, StateAnswer{Err: err.Error()}, http.StatusBadRequest)
 	}
-	newChan := make(APImessChan)
+	newChan := make(InputAPIChan)
 	msg := APImessage{
 		Message: mess,
 		ApiChan: newChan,

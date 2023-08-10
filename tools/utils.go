@@ -1,4 +1,4 @@
-package main
+package tools
 
 import (
 	"log"
@@ -6,14 +6,14 @@ import (
 	"strconv"
 )
 
-func getEnv(key string) string {
+func GetEnv(key string) string {
 	if value, exists := os.LookupEnv(key); exists {
 		return value
 	}
 	return ""
 }
 
-func getEnvInt(key string) int {
+func GetEnvInt(key string) int {
 	if value, exists := os.LookupEnv(key); exists {
 		val, err := strconv.Atoi(value)
 		if err != nil {
@@ -22,12 +22,4 @@ func getEnvInt(key string) int {
 		return val
 	}
 	return 0
-}
-
-func CopyMap(data StateStorage) StateStorage {
-	copyMap := make(StateStorage)
-	for key, value := range data {
-		copyMap[key] = value
-	}
-	return copyMap
 }
