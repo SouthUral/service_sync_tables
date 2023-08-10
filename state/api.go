@@ -84,3 +84,34 @@ func (state *State) ApiHandler(mess api.APImessage) {
 	}
 
 }
+
+// отправляет сообщение API если есть канал для этого
+func (state *State) ResponseAPIRequest(key string, err interface{}, status string) {
+	ch, ok := state.StorageChanI[key]
+	if !ok {
+		log.Info("Channel not found, API message not sent")
+		return
+	}
+	answerMap := make(StateStorage)
+	answerMap[key] = state.stateStorage[key]
+
+	apiMess := api.StateAnswer{
+		Data: answerMap,
+	}
+
+	switch status {
+	case StartSync:
+		if err != nil {
+			apiMess.Info = "sync did not start due to an error"
+			apiMess.Err = err
+		} else {
+			apiMess.Info = "sync has started successfully"
+		}
+	case StopSync:
+		apiMess.Info = "sync has been stopped"
+	}
+
+	ch <- apiMess
+
+	delete(state.StorageChanI, key)
+}

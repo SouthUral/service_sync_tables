@@ -12,6 +12,7 @@ type StateStorage map[string]StateSyncStorage
 
 // Структура для передачи сообщений из горутины с синхронизацией в горутину состояния.
 type syncMessChan struct {
+	Info   string
 	Offset string
 	Error  interface{}
 	id     string

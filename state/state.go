@@ -52,7 +52,7 @@ func (state *State) StateWorker() {
 		case mess := <-state.mdbOutput:
 			state.MongoWorker(mess)
 		case mess := <-state.syncOutput:
-			state.handlerSyncThreads(mess)
+			state.HandlerSyncThreads(mess)
 		case mess := <-state.outputApiChan:
 			state.ApiHandler(mess)
 		}
@@ -60,17 +60,29 @@ func (state *State) StateWorker() {
 }
 
 // обработчик для сообщений которые приходят из горутин
-func (state *State) handlerSyncThreads(mess syncMessChan) {
+func (state *State) HandlerSyncThreads(mess syncMessChan) {
 	itemSync := state.stateStorage[mess.id]
-	if mess.Error != nil {
-		state.StopSyncState(mess.id, mess.Error, false)
+
+	// отправляет сообщение в API либо об успешном страте либо об ошибке
+	switch mess.Info {
+	case StartSync:
+		if mess.Error == nil {
+			state.ResponseAPIRequest(mess.id, nil, StartSync)
+		} else {
+			state.StopSyncState(mess.id, mess.Error, false)
+			state.ResponseAPIRequest(mess.id, mess.Error, StartSync)
+		}
 		return
+	case RegularSync:
+		itemSync.Offset = mess.Offset
+		itemSync.IsSave = false
+		state.stateStorage[mess.id] = itemSync
+		state.updateDataMongo(mess.id)
+		log.Debug("Данные из горутины отправлены на сохранение в MongoDB")
+	case StopSync:
+		state.ResponseAPIRequest(mess.id, nil, StopSync)
 	}
-	itemSync.Offset = mess.Offset
-	itemSync.IsSave = false
-	state.stateStorage[mess.id] = itemSync
-	state.updateDataMongo(mess.id)
-	log.Debug("Данные из горутины отправлены на сохранение в MongoDB")
+
 }
 
 // Метод для остановки синхронизации
@@ -91,16 +103,6 @@ func (state *State) StopSyncState(key string, err interface{}, activeChan bool) 
 	}
 
 	state.stateStorage[key] = itemSync
-
-	ch, ok := state.StorageChanI[key]
-	if ok {
-		answ := make(StateStorage)
-		answ[key] = itemSync
-		ch <- api.StateAnswer{
-			Err:  nil,
-			Data: answ,
-		}
-	}
 }
 
 // создает новую запись в словаре stateStorage
@@ -130,16 +132,4 @@ func (state *State) InitSyncT(data mongo.StateMess) {
 	SyncData := state.stateStorage[StorageKey]
 	SyncData.syncChan = syncInput
 	state.stateStorage[StorageKey] = SyncData
-
-	// отправляет сообщение API если есть канал для этого
-	ch, ok := state.StorageChanI[StorageKey]
-	if ok {
-		answerMap := make(StateStorage)
-		answerMap[StorageKey] = state.stateStorage[StorageKey]
-		ch <- api.StateAnswer{
-			Err:  nil,
-			Data: answerMap,
-		}
-		delete(state.StorageChanI, StorageKey)
-	}
 }

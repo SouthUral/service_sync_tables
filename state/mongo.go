@@ -75,6 +75,7 @@ func (state *State) mdbUpdateData(mess mongo.MessCommand) {
 	state.stateStorage[key] = itemSync
 
 	// если данные обновлены то в горутину отпрвляется сообщение о продолжении работы
+	// если нет у sync нет канала (она была не активна) она инициализируется заного
 	if itemSync.syncChan != nil {
 		itemSync.syncChan <- Continue
 	} else {

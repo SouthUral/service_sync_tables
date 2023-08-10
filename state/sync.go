@@ -18,11 +18,12 @@ func SyncTables(data mongo.StateMess, inputChan chan string, outputChan chan syn
 	var answer string
 
 	intOffset, err := strconv.Atoi(data.Offset)
-	newOffset := intOffset + 1
+
 	if err != nil {
 		log.Error(err)
 		test_answer := syncMessChan{
-			Offset: "0",
+			Info:   StartSync,
+			Offset: data.Offset,
 			id:     fmt.Sprintf("%s_%s", data.DataBase, data.Table),
 			Error:  err.Error(),
 		}
@@ -30,19 +31,38 @@ func SyncTables(data mongo.StateMess, inputChan chan string, outputChan chan syn
 		return
 	}
 
+	// Отправка сообщения об успешном старте
+	// Такое сообщение не будет записываться в DB а сразу уйдет API
+	outputChan <- syncMessChan{
+		Info:   StartSync,
+		Offset: data.Offset,
+		id:     fmt.Sprintf("%s_%s", data.DataBase, data.Table),
+		Error:  nil,
+	}
+
 	for answer != Stop {
 
+		intOffset++
 		test_answer := syncMessChan{
-			Offset: strconv.Itoa(newOffset),
+			Info:   RegularSync,
+			Offset: strconv.Itoa(intOffset),
 			id:     fmt.Sprintf("%s_%s", data.DataBase, data.Table),
 			Error:  nil,
 		}
 		outputChan <- test_answer
-		log.Debug("Сообщение отправлено, offset: ", newOffset)
+		log.Debug("Сообщение отправлено, offset: ", intOffset)
 		answer = <-inputChan
 		time.Sleep(1 * time.Second)
-		newOffset++
 	}
+
+	// Отправляет сообщение об остановке синхронизации
+	outputChan <- syncMessChan{
+		Info:   StopSync,
+		Offset: strconv.Itoa(intOffset),
+		id:     fmt.Sprintf("%s_%s", data.DataBase, data.Table),
+		Error:  nil,
+	}
+
 	// close(outputChan)
 
 	defer log.Debug("Получено сообщение, цикл прекращен: ", answer)

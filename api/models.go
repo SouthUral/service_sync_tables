@@ -8,6 +8,7 @@ type InputAPIChan chan StateAnswer
 
 // Структура в которой содержится ответ для API запроса от State
 type StateAnswer struct {
+	Info string
 	Err  interface{}
 	Data interface{}
 }
