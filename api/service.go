@@ -85,6 +85,16 @@ func PostMethod(w http.ResponseWriter, r *http.Request, mess string, OutputCh Ou
 		}
 		allAnswer.Data = newList
 		JsonWriter(w, allAnswer, http.StatusOK)
+	case StopAll:
+		allAnswer := StateAnswer{
+			Info: "stop status of all sync",
+		}
+		newList := make([]StateAnswer, 0)
+		for vall := range newChan {
+			newList = append(newList, vall)
+		}
+		allAnswer.Data = newList
+		JsonWriter(w, allAnswer, http.StatusOK)
 	default:
 		answ, _ := <-newChan
 		JsonWriter(w, answ, http.StatusOK)

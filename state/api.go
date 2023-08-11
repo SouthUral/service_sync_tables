@@ -93,8 +93,32 @@ func (state *State) ApiHandler(mess api.APImessage) {
 		state.updateDataMongo(key_sync)
 	case api.StartAll:
 		state.apiStartAll(mess)
+	case api.StopAll:
+		state.apiStopAll(mess)
 	}
+}
 
+// метод для остановки всех активных синронизаций
+func (state *State) apiStopAll(mess api.APImessage) {
+	counterChanUse := CountChanUse{
+		Chanal:  mess.ApiChan,
+		Сounter: 0,
+	}
+	keySyncItems := make([]string, 0)
+	for key, itemSync := range state.stateStorage {
+		if !itemSync.IsActive {
+			continue
+		}
+		itemSync.IsActive = false
+		counterChanUse.Сounter++
+		state.stateStorage[key] = itemSync
+
+		keySyncItems = append(keySyncItems, key)
+	}
+	for _, key := range keySyncItems {
+		state.StorageChanI[key] = &counterChanUse
+		// state.updateDataMongo(key)
+	}
 }
 
 // Метод для активации всех незапущенных синхронизаций
