@@ -2,7 +2,6 @@ package state
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 
 	api "github.com/SouthUral/service_sync_tables/api"
@@ -53,158 +52,37 @@ func (state *State) StateWorker() {
 		case mess := <-state.mdbOutput:
 			state.MongoWorker(mess)
 		case mess := <-state.syncOutput:
-			state.handlerSyncThreads(mess)
+			state.HandlerSyncThreads(mess)
 		case mess := <-state.outputApiChan:
 			state.ApiHandler(mess)
 		}
 	}
 }
 
-// Функция для обработки сообщений из API
-func (state *State) ApiHandler(mess api.APImessage) {
-	switch mess.Message {
-	case api.GetAll:
-		mess.ApiChan <- api.StateAnswer{
-			Err:  nil,
-			Data: CopyMap(state.stateStorage),
-		}
-	case api.InputData:
-		key_sync := fmt.Sprintf("%s_%s", mess.Data.DataBase, mess.Data.Table)
-		_, ok := state.stateStorage[key_sync]
-		if ok {
-			ErrString := fmt.Sprintf("Sync '%s' is already", key_sync)
-			mess.ApiChan <- api.StateAnswer{
-				Err: ErrString,
-			}
-			log.Error(ErrString)
-			return
-		}
-		messComand := mongo.MessCommand{
-			Info: mongo.InputData,
-			Data: mongo.StateMess{
-				Table:    mess.Data.Table,
-				DataBase: mess.Data.DataBase,
-				Offset:   mess.Data.Offset,
-				IsActive: mess.Data.IsActive,
-			},
-		}
-		state.mdbInput <- messComand
-		// в словарь StorageChanI записывается канал, до момента получения ответа о записи из mdb
-		state.StorageChanI[key_sync] = mess.ApiChan
-	case api.StopSync:
-		key_sync := fmt.Sprintf("%s_%s", mess.Data.DataBase, mess.Data.Table)
-		itemSync, ok := state.stateStorage[key_sync]
-		if !ok {
-			ErrString := fmt.Sprintf("There is no such sync: %s", key_sync)
-			mess.ApiChan <- api.StateAnswer{
-				Err: ErrString,
-			}
-			log.Error(ErrString)
-			return
-		}
-		if itemSync.IsActive == false {
-			mess.ApiChan <- api.StateAnswer{
-				Err: "sync is already stop",
-			}
-			return
-		}
-		itemSync.IsActive = false
-		state.stateStorage[key_sync] = itemSync
-		state.StorageChanI[key_sync] = mess.ApiChan
-	case api.StartSync:
-		key_sync := fmt.Sprintf("%s_%s", mess.Data.DataBase, mess.Data.Table)
-		itemSync, ok := state.stateStorage[key_sync]
-		if !ok {
-			ErrString := fmt.Sprintf("There is no such sync: %s", key_sync)
-			mess.ApiChan <- api.StateAnswer{
-				Err: ErrString,
-			}
-			log.Error(ErrString)
-			return
-		}
-		if itemSync.IsActive == true {
-			mess.ApiChan <- api.StateAnswer{
-				Err: "sync is already start",
-			}
-			return
-		}
-		itemSync.IsActive = true
-		state.stateStorage[key_sync] = itemSync
-		state.StorageChanI[key_sync] = mess.ApiChan
-		state.updateDataMongo(key_sync)
-	}
-
-}
-
 // обработчик для сообщений которые приходят из горутин
-func (state *State) handlerSyncThreads(mess syncMessChan) {
+func (state *State) HandlerSyncThreads(mess syncMessChan) {
 	itemSync := state.stateStorage[mess.id]
-	if mess.Error != nil {
-		state.StopSyncState(mess.id, mess.Error, false)
-		return
-	}
-	itemSync.Offset = mess.Offset
-	itemSync.IsSave = false
-	state.stateStorage[mess.id] = itemSync
-	state.updateDataMongo(mess.id)
-	log.Debug("Данные из горутины отправлены на сохранение в MongoDB")
-}
 
-// Метод для отправки изменений в состоянии в Mongo.
-// Для отправки изменений нужно сначала записать изменения в локальный map stateStorage
-// далее вызвать этот метод передав в него ключ
-func (state *State) updateDataMongo(id_sync string) {
-	itemSync := state.stateStorage[id_sync]
-	newMess := mongo.MessCommand{
-		Info: mongo.UpdateData,
-		Data: mongo.StateMess{
-			Oid:      itemSync.Id,
-			DataBase: itemSync.DataBase,
-			Table:    itemSync.Table,
-			Offset:   fmt.Sprintf("%s", itemSync.Offset),
-			IsActive: itemSync.IsActive,
-		},
-	}
-	state.mdbInput <- newMess
-}
-
-// Обработчик сообщений приходящих от модуля MongoDB
-func (state *State) MongoWorker(mess mongo.MessCommand) {
+	// отправляет сообщение в API либо об успешном страте либо об ошибке
 	switch mess.Info {
-	case mongo.GetAll:
-		state.mdbGetAll(mess)
-	case mongo.InputData:
-		state.mdbInputData(mess)
-	case mongo.UpdateData:
-		state.mdbUpdateData(mess)
-	}
-}
-
-// метод обработчик для сообщений UpdateData из модуля MongoDB
-func (state *State) mdbUpdateData(mess mongo.MessCommand) {
-	key := fmt.Sprintf("%s_%s", mess.Data.DataBase, mess.Data.Table)
-	itemSync := state.stateStorage[key]
-	if mess.Error != nil {
-		log.Error("Данные не обновлены в Mongo: ", mess.Error)
-		state.StopSyncState(key, mess.Error, true)
+	case StartSync:
+		if mess.Error == nil {
+			state.ResponseAPIRequest(mess.id, nil, StartSync)
+		} else {
+			state.StopSyncState(mess.id, mess.Error, false)
+			state.ResponseAPIRequest(mess.id, mess.Error, StartSync)
+		}
 		return
+	case RegularSync:
+		itemSync.Offset = mess.Offset
+		itemSync.IsSave = false
+		state.stateStorage[mess.id] = itemSync
+		state.updateDataMongo(mess.id)
+		log.Debug("Данные из горутины отправлены на сохранение в MongoDB")
+	case StopSync:
+		state.ResponseAPIRequest(mess.id, nil, StopSync)
 	}
 
-	// Останавливает синхронизацю если флаг IsActive false
-	if itemSync.IsActive == false {
-		state.StopSyncState(key, nil, true)
-		return
-	}
-
-	itemSync.IsSave = true
-	state.stateStorage[key] = itemSync
-
-	// если данные обновлены то в горутину отпрвляется сообщение о продолжении работы
-	if itemSync.syncChan != nil {
-		itemSync.syncChan <- Continue
-	} else {
-		state.InitSyncT(mess.Data)
-	}
 }
 
 // Метод для остановки синхронизации
@@ -225,50 +103,6 @@ func (state *State) StopSyncState(key string, err interface{}, activeChan bool) 
 	}
 
 	state.stateStorage[key] = itemSync
-
-	ch, ok := state.StorageChanI[key]
-	if ok {
-		answ := make(StateStorage)
-		answ[key] = itemSync
-		ch <- api.StateAnswer{
-			Err:  nil,
-			Data: answ,
-		}
-	}
-}
-
-// Этот метод запускает горутины синхронизаций!!!
-// обработчик сообщений из монго, работает с сообщниями InputData
-// запуск горутины произойдет только после записи о синхронизации в mongo
-func (state *State) mdbInputData(mess mongo.MessCommand) {
-	StorageChanKey := fmt.Sprintf("%s_%s", mess.Data.DataBase, mess.Data.Table)
-	ch := state.StorageChanI[StorageChanKey]
-	if mess.Error != nil {
-		log.Error("Данные не добавлены в Mongo: ", mess.Error)
-		// отправка сообщения в канал REST о неудачном запуске
-		ch <- api.StateAnswer{
-			Err: mess.Error,
-		}
-		delete(state.StorageChanI, StorageChanKey)
-		return
-	}
-	state.AddInfoToStorage(mess.Data)
-	if mess.Data.IsActive {
-		state.InitSyncT(mess.Data)
-	}
-}
-
-// обработчик сообщений из монго, работает с сообщниями GetAll
-func (state *State) mdbGetAll(mess mongo.MessCommand) {
-	if mess.Error != nil {
-		log.Error("Старт синхронизации не состоялся по причине: ", mess.Error)
-		state.mongoError = mess.Error
-		return
-	}
-	state.AddInfoToStorage(mess.Data)
-	if mess.Data.IsActive {
-		state.InitSyncT(mess.Data)
-	}
 }
 
 // создает новую запись в словаре stateStorage
@@ -298,55 +132,4 @@ func (state *State) InitSyncT(data mongo.StateMess) {
 	SyncData := state.stateStorage[StorageKey]
 	SyncData.syncChan = syncInput
 	state.stateStorage[StorageKey] = SyncData
-
-	// отправляет сообщение API если есть канал для этого
-	ch, ok := state.StorageChanI[StorageKey]
-	if ok {
-		answerMap := make(StateStorage)
-		answerMap[StorageKey] = state.stateStorage[StorageKey]
-		ch <- api.StateAnswer{
-			Err:  nil,
-			Data: answerMap,
-		}
-		delete(state.StorageChanI, StorageKey)
-	}
-}
-
-// функция запускается в отдельном потоке, ее задача подключиться к БД1 и БД2 и синхронизировать их
-// останавливается горутина сообщением из канала inputChan
-func SyncTables(data mongo.StateMess, inputChan chan string, outputChan chan syncMessChan) {
-	//  здесь должно быть подключение к БД1 и БД2
-	// в случае неудачного подключения нужно отправить ошибку в канал outputChan и завершить работу горутины
-	var answer string
-
-	intOffset, err := strconv.Atoi(data.Offset)
-	newOffset := intOffset + 1
-	if err != nil {
-		log.Error(err)
-		test_answer := syncMessChan{
-			Offset: "0",
-			id:     fmt.Sprintf("%s_%s", data.DataBase, data.Table),
-			Error:  err.Error(),
-		}
-		outputChan <- test_answer
-		return
-	}
-
-	for answer != Stop {
-
-		test_answer := syncMessChan{
-			Offset: strconv.Itoa(newOffset),
-			id:     fmt.Sprintf("%s_%s", data.DataBase, data.Table),
-			Error:  nil,
-		}
-		outputChan <- test_answer
-		log.Debug("Сообщение отправлено, offset: ", newOffset)
-		answer = <-inputChan
-		time.Sleep(1 * time.Second)
-		newOffset++
-	}
-	// close(outputChan)
-
-	defer log.Debug("Получено сообщение, цикл прекращен: ", answer)
-	return
 }

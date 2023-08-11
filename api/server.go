@@ -30,6 +30,8 @@ func (srv *Server) StartServer() {
 	http.HandleFunc("/add_sync", midlware(srv.addNewSync))
 	http.HandleFunc("/stop_sync", midlware(srv.stopSync))
 	http.HandleFunc("/start_sync", midlware(srv.startSync))
+	http.HandleFunc("/start-allSync", midlware(srv.startAllSync))
+	http.HandleFunc("/stop-allSync", midlware(srv.stopAllSync))
 	http.ListenAndServe(srv.Port, nil)
 
 }
@@ -41,7 +43,7 @@ func (srv *Server) StartServer() {
 //	@Tags 			Get
 //	@Accept       	json
 //	@Produce      	json
-//	@Success		200		{object}	StateStorage
+//	@Success		200		{object}	StateAnswer
 //	@Router			/all_sync	[get]
 func (srv *Server) allSync(w http.ResponseWriter, r *http.Request) {
 	GetMethod(w, r, GetAll, srv.OutputCh)
@@ -54,7 +56,7 @@ func (srv *Server) allSync(w http.ResponseWriter, r *http.Request) {
 // @Param 		request 	body 	InputDataApi 	false 	"body example"
 // @Router		/stop_sync	[post]
 func (srv *Server) stopSync(w http.ResponseWriter, r *http.Request) {
-	PostMethod(w, r, StopSync, srv.OutputCh)
+	PostMethod(w, r, StopSync, srv.OutputCh, true)
 	log.Info("StopSync request processed")
 }
 
@@ -64,7 +66,7 @@ func (srv *Server) stopSync(w http.ResponseWriter, r *http.Request) {
 // @Param 		request 	body 	InputDataApi 	false 	"body example"
 // @Router		/add_sync	[post]
 func (srv *Server) addNewSync(w http.ResponseWriter, r *http.Request) {
-	PostMethod(w, r, InputData, srv.OutputCh)
+	PostMethod(w, r, InputData, srv.OutputCh, true)
 	log.Info("AddNewSync request processed")
 }
 
@@ -74,8 +76,26 @@ func (srv *Server) addNewSync(w http.ResponseWriter, r *http.Request) {
 // @Param 		request 	body 	InputDataApi 	false 	"body example"
 // @Router		/start_sync	[post]
 func (srv *Server) startSync(w http.ResponseWriter, r *http.Request) {
-	PostMethod(w, r, StartSync, srv.OutputCh)
-	log.Info("AddNewSync request processed")
+	PostMethod(w, r, StartSync, srv.OutputCh, true)
+	log.Info("StartSync request processed")
+}
+
+// @Summary startAllSync
+// @Tags Post
+// @Description метод для старта всех синхронизаций
+// @Router		/start-allSync	[post]
+func (srv *Server) startAllSync(w http.ResponseWriter, r *http.Request) {
+	PostMethod(w, r, StartAll, srv.OutputCh, false)
+	log.Info("StartAllSync request processed")
+}
+
+// @Summary stopAllSync
+// @Tags Post
+// @Description метод остановки всех синхронизаций
+// @Router		/stop-allSync	[post]
+func (srv *Server) stopAllSync(w http.ResponseWriter, r *http.Request) {
+	PostMethod(w, r, StopAll, srv.OutputCh, false)
+	log.Info("stopAllSync request processed")
 }
 
 // мидлвар с дебаг логом
