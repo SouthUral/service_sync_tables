@@ -42,7 +42,7 @@ func (srv *Server) StartServer() {
 //	@Tags 			Get
 //	@Accept       	json
 //	@Produce      	json
-//	@Success		200		{object}	StateStorage
+//	@Success		200		{object}	StateAnswer
 //	@Router			/all_sync	[get]
 func (srv *Server) allSync(w http.ResponseWriter, r *http.Request) {
 	GetMethod(w, r, GetAll, srv.OutputCh)
@@ -82,7 +82,6 @@ func (srv *Server) startSync(w http.ResponseWriter, r *http.Request) {
 // @Summary startAllSync
 // @Tags Post
 // @Description метод для старта всех синхронизаций
-// @Param 		request 	body 	InputDataApi 	false 	"body example"
 // @Router		/start-allSync	[post]
 func (srv *Server) startAllSync(w http.ResponseWriter, r *http.Request) {
 	PostMethod(w, r, StartAll, srv.OutputCh, false)

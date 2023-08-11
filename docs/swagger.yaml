@@ -1,6 +1,6 @@
 basePath: /
 definitions:
-  main.InputDataApi:
+  api.InputDataApi:
     properties:
       data_base:
         type: string
@@ -11,25 +11,11 @@ definitions:
       table:
         type: string
     type: object
-  main.StateStorage:
-    additionalProperties:
-      $ref: '#/definitions/main.StateSyncStorage'
-    type: object
-  main.StateSyncStorage:
+  api.StateAnswer:
     properties:
-      data_base:
-        type: string
-      date_end: {}
-      date_start: {}
-      error: {}
-      id:
-        type: string
-      is_active:
-        type: boolean
-      is_save:
-        type: boolean
-      offset: {}
-      table:
+      data: {}
+      err: {}
+      info:
         type: string
     type: object
 host: localhost:3000
@@ -47,7 +33,7 @@ paths:
         in: body
         name: request
         schema:
-          $ref: '#/definitions/main.InputDataApi'
+          $ref: '#/definitions/api.InputDataApi'
       responses: {}
       summary: addNewSync
       tags:
@@ -63,10 +49,17 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.StateStorage'
+            $ref: '#/definitions/api.StateAnswer'
       summary: allSync
       tags:
       - Get
+  /start-allSync:
+    post:
+      description: метод для старта всех синхронизаций
+      responses: {}
+      summary: startAllSync
+      tags:
+      - Post
   /start_sync:
     post:
       description: метод для старта приостановленной синхронизации
@@ -75,7 +68,7 @@ paths:
         in: body
         name: request
         schema:
-          $ref: '#/definitions/main.InputDataApi'
+          $ref: '#/definitions/api.InputDataApi'
       responses: {}
       summary: startSync
       tags:
@@ -88,7 +81,7 @@ paths:
         in: body
         name: request
         schema:
-          $ref: '#/definitions/main.InputDataApi'
+          $ref: '#/definitions/api.InputDataApi'
       responses: {}
       summary: stopSync
       tags:

@@ -29,7 +29,7 @@ const docTemplate = `{
                         "name": "request",
                         "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/main.InputDataApi"
+                            "$ref": "#/definitions/api.InputDataApi"
                         }
                     }
                 ],
@@ -53,10 +53,20 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.StateStorage"
+                            "$ref": "#/definitions/api.StateAnswer"
                         }
                     }
                 }
+            }
+        },
+        "/start-allSync": {
+            "post": {
+                "description": "метод для старта всех синхронизаций",
+                "tags": [
+                    "Post"
+                ],
+                "summary": "startAllSync",
+                "responses": {}
             }
         },
         "/start_sync": {
@@ -72,7 +82,7 @@ const docTemplate = `{
                         "name": "request",
                         "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/main.InputDataApi"
+                            "$ref": "#/definitions/api.InputDataApi"
                         }
                     }
                 ],
@@ -92,7 +102,7 @@ const docTemplate = `{
                         "name": "request",
                         "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/main.InputDataApi"
+                            "$ref": "#/definitions/api.InputDataApi"
                         }
                     }
                 ],
@@ -101,7 +111,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "main.InputDataApi": {
+        "api.InputDataApi": {
             "type": "object",
             "properties": {
                 "data_base": {
@@ -118,32 +128,12 @@ const docTemplate = `{
                 }
             }
         },
-        "main.StateStorage": {
-            "type": "object",
-            "additionalProperties": {
-                "$ref": "#/definitions/main.StateSyncStorage"
-            }
-        },
-        "main.StateSyncStorage": {
+        "api.StateAnswer": {
             "type": "object",
             "properties": {
-                "data_base": {
-                    "type": "string"
-                },
-                "date_end": {},
-                "date_start": {},
-                "error": {},
-                "id": {
-                    "type": "string"
-                },
-                "is_active": {
-                    "type": "boolean"
-                },
-                "is_save": {
-                    "type": "boolean"
-                },
-                "offset": {},
-                "table": {
+                "data": {},
+                "err": {},
+                "info": {
                     "type": "string"
                 }
             }
