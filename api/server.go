@@ -30,6 +30,7 @@ func (srv *Server) StartServer() {
 	http.HandleFunc("/add_sync", midlware(srv.addNewSync))
 	http.HandleFunc("/stop_sync", midlware(srv.stopSync))
 	http.HandleFunc("/start_sync", midlware(srv.startSync))
+	http.HandleFunc("/start-allSync", midlware(srv.startAllSync))
 	http.ListenAndServe(srv.Port, nil)
 
 }
@@ -75,7 +76,17 @@ func (srv *Server) addNewSync(w http.ResponseWriter, r *http.Request) {
 // @Router		/start_sync	[post]
 func (srv *Server) startSync(w http.ResponseWriter, r *http.Request) {
 	PostMethod(w, r, StartSync, srv.OutputCh)
-	log.Info("AddNewSync request processed")
+	log.Info("StartSync request processed")
+}
+
+// @Summary startAllSync
+// @Tags Post
+// @Description метод для старта всех синхронизаций
+// @Param 		request 	body 	InputDataApi 	false 	"body example"
+// @Router		/start-allSync	[post]
+func (srv *Server) startAllSync(w http.ResponseWriter, r *http.Request) {
+	PostMethod(w, r, StartAll, srv.OutputCh)
+	log.Info("StartAllSync request processed")
 }
 
 // мидлвар с дебаг логом
