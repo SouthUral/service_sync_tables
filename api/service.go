@@ -52,23 +52,42 @@ func GetMethod(w http.ResponseWriter, r *http.Request, mess string, OutputCh Out
 }
 
 // абстрактный метод для POST запросов
-func PostMethod(w http.ResponseWriter, r *http.Request, mess string, OutputCh OutputAPIChan) {
+func PostMethod(w http.ResponseWriter, r *http.Request, mess string, OutputCh OutputAPIChan, body bool) {
 	if r.Method != http.MethodPost {
 		ErrorWriter(w, "Request error", http.StatusBadRequest)
 		return
 	}
 	var InpData InputDataApi
-	err := json.NewDecoder(r.Body).Decode(&InpData)
-	if err != nil {
-		JsonWriter(w, StateAnswer{Err: err.Error()}, http.StatusBadRequest)
+
+	if body {
+		err := json.NewDecoder(r.Body).Decode(&InpData)
+		if err != nil {
+			JsonWriter(w, StateAnswer{Err: err.Error()}, http.StatusBadRequest)
+		}
 	}
-	newChan := make(InputAPIChan)
+
+	newChan := make(InputAPIChan, 10)
 	msg := APImessage{
 		Message: mess,
 		ApiChan: newChan,
 		Data:    InpData,
 	}
 	OutputCh <- msg
-	answ, _ := <-newChan
-	JsonWriter(w, answ, http.StatusOK)
+
+	switch mess {
+	case StartAll:
+		allAnswer := StateAnswer{
+			Info: "start status of all sync",
+		}
+		newList := make([]StateAnswer, 0)
+		for vall := range newChan {
+			newList = append(newList, vall)
+		}
+		allAnswer.Data = newList
+		JsonWriter(w, allAnswer, http.StatusOK)
+	default:
+		answ, _ := <-newChan
+		JsonWriter(w, answ, http.StatusOK)
+	}
+
 }

@@ -5,7 +5,7 @@ import "github.com/SouthUral/service_sync_tables/api"
 // словарь для хранения обратного канала API до момента пока придет ответ от mdb
 // о добавлении в Mongo информации о новой синхронизации
 // хранимый канал нужен для ответа клиенту об усппешном добавлении
-type StorageChanInput map[string]api.InputAPIChan
+type StorageChanInput map[string]*CountChanUse
 
 // словарь для хранения всех структур с информацией о синхронизациях
 type StateStorage map[string]StateSyncStorage
@@ -16,6 +16,13 @@ type syncMessChan struct {
 	Offset string
 	Error  interface{}
 	id     string
+}
+
+// Структура содержит количество ссылок на канал.
+// Используется для закрытия канала
+type CountChanUse struct {
+	Сounter int
+	Chanal  api.InputAPIChan
 }
 
 // Структура для хранении информации о синхронизации таблиц в программе.

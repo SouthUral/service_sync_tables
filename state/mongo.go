@@ -39,14 +39,9 @@ func (state *State) mdbGetAll(mess mongo.MessCommand) {
 // запуск горутины произойдет только после записи о синхронизации в mongo
 func (state *State) mdbInputData(mess mongo.MessCommand) {
 	StorageChanKey := fmt.Sprintf("%s_%s", mess.Data.DataBase, mess.Data.Table)
-	ch := state.StorageChanI[StorageChanKey]
 	if mess.Error != nil {
 		log.Error("Данные не добавлены в Mongo: ", mess.Error)
-		// отправка сообщения в канал REST о неудачном запуске
-		ch <- api.StateAnswer{
-			Err: mess.Error,
-		}
-		delete(state.StorageChanI, StorageChanKey)
+		state.ResponseAPIRequest(StorageChanKey, mess.Error, api.InputData)
 		return
 	}
 	state.AddInfoToStorage(mess.Data)

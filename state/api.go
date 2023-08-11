@@ -39,7 +39,10 @@ func (state *State) ApiHandler(mess api.APImessage) {
 		}
 		state.mdbInput <- messComand
 		// в словарь StorageChanI записывается канал, до момента получения ответа о записи из mdb
-		state.StorageChanI[key_sync] = mess.ApiChan
+		state.StorageChanI[key_sync] = &CountChanUse{
+			Chanal:  mess.ApiChan,
+			Сounter: 1,
+		}
 	case api.StopSync:
 		key_sync := fmt.Sprintf("%s_%s", mess.Data.DataBase, mess.Data.Table)
 		itemSync, ok := state.stateStorage[key_sync]
@@ -59,7 +62,10 @@ func (state *State) ApiHandler(mess api.APImessage) {
 		}
 		itemSync.IsActive = false
 		state.stateStorage[key_sync] = itemSync
-		state.StorageChanI[key_sync] = mess.ApiChan
+		state.StorageChanI[key_sync] = &CountChanUse{
+			Chanal:  mess.ApiChan,
+			Сounter: 1,
+		}
 	case api.StartSync:
 		key_sync := fmt.Sprintf("%s_%s", mess.Data.DataBase, mess.Data.Table)
 		itemSync, ok := state.stateStorage[key_sync]
@@ -73,21 +79,50 @@ func (state *State) ApiHandler(mess api.APImessage) {
 		}
 		if itemSync.IsActive == true {
 			mess.ApiChan <- api.StateAnswer{
-				Err: "sync is already start",
+				Err:  "sync is already start",
+				Data: itemSync,
 			}
 			return
 		}
 		itemSync.IsActive = true
 		state.stateStorage[key_sync] = itemSync
-		state.StorageChanI[key_sync] = mess.ApiChan
+		state.StorageChanI[key_sync] = &CountChanUse{
+			Chanal:  mess.ApiChan,
+			Сounter: 1,
+		}
 		state.updateDataMongo(key_sync)
+	case api.StartAll:
+		state.apiStartAll(mess)
 	}
 
 }
 
+// Метод для активации всех незапущенных синхронизаций
+func (state *State) apiStartAll(mess api.APImessage) {
+	counterChanUse := CountChanUse{
+		Chanal:  mess.ApiChan,
+		Сounter: 0,
+	}
+	keySyncItems := make([]string, 0)
+	for key, itemSync := range state.stateStorage {
+		if itemSync.IsActive {
+			continue
+		}
+		itemSync.IsActive = true
+		counterChanUse.Сounter++
+		state.stateStorage[key] = itemSync
+
+		keySyncItems = append(keySyncItems, key)
+	}
+	for _, key := range keySyncItems {
+		state.StorageChanI[key] = &counterChanUse
+		state.updateDataMongo(key)
+	}
+}
+
 // отправляет сообщение API если есть канал для этого
 func (state *State) ResponseAPIRequest(key string, err interface{}, status string) {
-	ch, ok := state.StorageChanI[key]
+	chanCount, ok := state.StorageChanI[key]
 	if !ok {
 		log.Info("Channel not found, API message not sent")
 		return
@@ -111,7 +146,15 @@ func (state *State) ResponseAPIRequest(key string, err interface{}, status strin
 		apiMess.Info = "sync has been stopped"
 	}
 
-	ch <- apiMess
+	chanCount.Chanal <- apiMess
+
+	// проверка сколько сообщений
+	if chanCount.Сounter > 1 {
+		chanCount.Сounter--
+	} else {
+		chanCount.Сounter--
+		close(chanCount.Chanal)
+	}
 
 	delete(state.StorageChanI, key)
 }

@@ -9,4 +9,5 @@ const (
 	ErrorSync      = "error_sync"
 	StopSync       = "stop_sync"
 	RegularSync    = "regular_sinc"
+	MDBRecordError = "MDBRecordError"
 )
