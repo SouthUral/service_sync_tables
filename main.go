@@ -4,6 +4,7 @@ import (
 	"time"
 
 	Api "github.com/SouthUral/service_sync_tables/api"
+	Config "github.com/SouthUral/service_sync_tables/config"
 	Mongo "github.com/SouthUral/service_sync_tables/database/mongodb"
 	URLStorage "github.com/SouthUral/service_sync_tables/database/urlstorage"
 	_ "github.com/SouthUral/service_sync_tables/docs"
@@ -20,6 +21,13 @@ import (
 func main() {
 	log.SetLevel(log.InfoLevel)
 
+	// Загрузка конфигурации
+	confStruct, err := Config.GetConf()
+	if err != nil {
+		log.Error("Конфигурация не загружена, программа завершена")
+		return
+	}
+
 	inputMDBchan := make(Mongo.MongoInputChan, 100)
 	inputUrlChan := make(URLStorage.InputUrlStorageCh, 100)
 	outputMDBchan := make(Mongo.MongoOutputChan, 100)
@@ -30,7 +38,7 @@ func main() {
 	State.InitState(inputMDBchan, outputMDBchan, outputApiChan)
 
 	// инициализация модуля работы с URL
-	URLStorage.InitUrlStorage(inputUrlChan)
+	URLStorage.InitUrlStorage(inputUrlChan, confStruct)
 
 	log.Info("Server is starting")
 	time.Sleep(1000 * time.Second)

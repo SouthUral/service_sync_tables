@@ -2,18 +2,25 @@ package urlstorage
 
 // пакет для хранения и работы с url для подключениям к БД
 
+import (
+	Config "github.com/SouthUral/service_sync_tables/config"
+)
+
 // структура необходимая для работы модуля urlstorage
 type urlStorage struct {
-	storage   StorageConnDB
-	inputChan InputUrlStorageCh
+	storage        StorageConnDB
+	inputChan      InputUrlStorageCh
+	urlStoragePath string
 }
 
-// функция для инициализации urlstorage, принимает на вход канал для получения сообщений
-// и канал для отправки сообщений в Mongo
-func InitUrlStorage(InputCh InputUrlStorageCh) {
+// функция для инициализации urlstorage.
+// На вход функция получает канал для получения сообщений
+// и map с набором env переменных, которые будут использоваться в этом модуле
+func InitUrlStorage(InputCh InputUrlStorageCh, ConfVars Config.ConfEnum) {
 	urlStorage := urlStorage{
-		storage:   make(StorageConnDB),
-		inputChan: InputCh,
+		storage:        make(StorageConnDB),
+		inputChan:      InputCh,
+		urlStoragePath: ConfVars.UrlStoragePass,
 	}
 
 	go urlStorage.urlMain()

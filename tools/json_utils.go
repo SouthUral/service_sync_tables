@@ -1,4 +1,4 @@
-package urlstorage
+package tools
 
 import (
 	"encoding/json"
@@ -8,22 +8,22 @@ import (
 )
 
 // Функция для чтения и декодирования данных из json-файла.
-// На вход получает тип слайс со структурой, в которую нужно загрузить данные,
+// На вход получает тип , в который нужно загрузить данные,
 // и название файла, в который нужно произвести запись.
 // Возвращает пару (результат, ошибку).
-func JsonRead(resultTypeData []interface{}, FileName string) (any, any) {
+func JsonRead[inputData any | ConfEnum](resultTypeData *inputData, FileName string) any {
 	data, err := os.ReadFile(FileName)
 	if err != nil {
 		log.Error(err)
-		return nil, err
+		return err
 	}
 
 	err = json.Unmarshal(data, &resultTypeData)
 	if err != nil {
 		log.Error(err)
-		return nil, err
+		return err
 	}
-	return resultTypeData, nil
+	return nil
 }
 
 // Функция для кодирования и записи в json-файл.

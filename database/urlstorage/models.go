@@ -17,3 +17,7 @@ type StorageConnDB map[DBAlias]ConnDBData
 
 // alias для БД
 type DBAlias string
+
+type ConfEnum struct {
+	UrlStoragePass string `json:"url_storage_path"`
+}
