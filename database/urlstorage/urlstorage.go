@@ -13,14 +13,14 @@ import (
 // структура необходимая для работы модуля urlstorage
 type urlStorage struct {
 	storage        StorageConnDB
-	inputChan      InputUrlStorageCh
+	inputChan      InputUrlStorageAPIch
 	urlStoragePath string
 }
 
 // функция для инициализации urlstorage.
 // На вход функция получает канал для получения сообщений
 // и map с набором env переменных, которые будут использоваться в этом модуле
-func InitUrlStorage(InputCh InputUrlStorageCh, ConfVars Config.ConfEnum) {
+func InitUrlStorage(InputCh InputUrlStorageAPIch, ConfVars Config.ConfEnum) {
 	urlStorage := urlStorage{
 		storage:        make(StorageConnDB),
 		inputChan:      InputCh,
@@ -38,12 +38,16 @@ func (url *urlStorage) urlMain() {
 		select {
 		// ловит сообщение из mdb
 		case mess := <-url.inputChan:
-			url.getUrldata(mess)
+			url.processMess(mess)
 		}
 	}
 }
 
-func (url *urlStorage) getUrldata(mess UrlMessInput) {
+func (url *urlStorage) processMess(mess UrlMessInput) {
+
+}
+
+func (url *urlStorage) getDBConnData(mess UrlMessInput) {
 
 }
 
