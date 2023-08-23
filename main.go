@@ -29,7 +29,7 @@ func main() {
 	}
 
 	inputMDBchan := make(Mongo.MongoInputChan, 100)
-	inputUrlChan := make(URLStorage.InputUrlStorageCh, 100)
+	inputUrlChan := make(URLStorage.InputUrlStorageAPIch, 100)
 	outputMDBchan := make(Mongo.MongoOutputChan, 100)
 	outputApiChan := make(Api.OutputAPIChan, 100)
 

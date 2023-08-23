@@ -1,0 +1,35 @@
+[
+    {
+        "db_alias": "alias1",
+        "conn_data": 
+        {
+            "bd_name": "example_name_1",
+            "host": "example_host",
+            "port": "1234",
+            "user": "example_user",
+            "password": "example_password"
+        }
+    },
+    {
+        "db_alias": "alias2",
+        "conn_data": 
+        {
+            "bd_name": "example_name_2",
+            "host": "example_host_2",
+            "port": "4321",
+            "user": "example_user_2",
+            "password": "example_password_2"
+        }
+    },
+    {
+        "db_alias": "alias3",
+        "conn_data": 
+        {
+            "bd_name": "example_name_3",
+            "host": "example_host_3",
+            "port": "5678",
+            "user": "example_user_3",
+            "password": "example_password_3"
+        }
+    }
+]
