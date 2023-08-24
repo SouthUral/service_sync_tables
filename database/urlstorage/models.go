@@ -4,12 +4,16 @@ package urlstorage
 type InputUrlStorageAPIch chan UrlMessInput
 
 // Канал для отправки ответа от urlstorage в  API
-type ReverseAPIch chan AnswerMessAPI[StorageConnDB]
+type ReverseAPIch chan AnswerMessAPI
 
 // Структура для ответа модулю API
-type AnswerMessAPI[structConn StorageConnDB | URLConnData | any] struct {
+type AnswerMessAPI struct {
 	Error      interface{}
-	AnswerData structConn
+	AnswerData any
+}
+
+type AnswerData[typeAnswer StorageConnDB | URLConnData | any] struct {
+	data typeAnswer
 }
 
 // параметры для подключения к БД в формате url
@@ -52,6 +56,9 @@ type StorageConnDB map[DBAlias]ConnDBData
 
 // alias для БД
 type DBAlias string
+
+// формат параметров для подключения к БД в формате URL
+type ConnDBURL string
 
 type ConfEnum struct {
 	UrlStoragePass string `json:"url_storage_path"`

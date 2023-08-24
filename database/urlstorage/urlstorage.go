@@ -5,6 +5,8 @@ package urlstorage
 import (
 	// "fmt"
 
+	"fmt"
+
 	Config "github.com/SouthUral/service_sync_tables/config"
 	tools "github.com/SouthUral/service_sync_tables/tools"
 	log "github.com/sirupsen/logrus"
@@ -47,10 +49,8 @@ func (url *urlStorage) urlMain() {
 func (url *urlStorage) processMess(mess UrlMessInput) {
 	switch mess.Message.Method {
 	case GetAll:
-		// log.Debug("заглушка processMess.GetAll")
 		url.handlerMessGetAll(mess)
 	case GetOne:
-		log.Debug("заглушка processMess.GetOne")
 		url.handlerMessGetOne(mess)
 	case ChangeOne:
 		log.Debug("заглушка processMess.ChangeOne")
@@ -66,9 +66,9 @@ func (url *urlStorage) handlerMessGetAll(mess UrlMessInput) {
 	switch mess.Message.Format {
 
 	case FormatURL:
-		answerMess := AnswerMessAPI[StorageConnDB]{
+		answerMess := AnswerMessAPI{
 			Error: ErrorAnswerURL{
-				textError: "Данный формат недоступен для API",
+				textError: "Данный формат недоступен для множественного вывода",
 			},
 			AnswerData: nil,
 		}
@@ -77,7 +77,7 @@ func (url *urlStorage) handlerMessGetAll(mess UrlMessInput) {
 
 	case FormatStruct:
 		answerData := CopyMap(url.storage)
-		answerMess := AnswerMessAPI[StorageConnDB]{
+		answerMess := AnswerMessAPI{
 			Error:      nil,
 			AnswerData: answerData,
 		}
@@ -85,7 +85,7 @@ func (url *urlStorage) handlerMessGetAll(mess UrlMessInput) {
 		log.Debug("Данные о параметрах подключения отправлены")
 
 	default:
-		answerMess := AnswerMessAPI[StorageConnDB]{
+		answerMess := AnswerMessAPI{
 			Error: ErrorAnswerURL{
 				textError: "Неизвестный формат",
 			},
@@ -98,21 +98,101 @@ func (url *urlStorage) handlerMessGetAll(mess UrlMessInput) {
 
 // обработчик для сообщений GetOne
 func (url *urlStorage) handlerMessGetOne(mess UrlMessInput) {
+	switch mess.Message.Format {
 
+	case FormatURL:
+		data, err := url.getOneConn(mess.Message.SearchFor)
+		if err != nil {
+			answerMess := AnswerMessAPI{
+				Error:      err,
+				AnswerData: nil,
+			}
+			mess.ReverseCh <- answerMess
+		} else {
+			urlConn := CreateUrlFromStruct(data)
+			answerMess := AnswerMessAPI{
+				Error:      nil,
+				AnswerData: urlConn,
+			}
+			mess.ReverseCh <- answerMess
+		}
+
+	case FormatStruct:
+		data, err := url.getOneConn(mess.Message.SearchFor)
+		if err != nil {
+			answerMess := AnswerMessAPI{
+				Error:      err,
+				AnswerData: nil,
+			}
+			mess.ReverseCh <- answerMess
+		} else {
+			answerMess := AnswerMessAPI{
+				Error:      nil,
+				AnswerData: data,
+			}
+			mess.ReverseCh <- answerMess
+		}
+
+	default:
+		answerMess := AnswerMessAPI{
+			Error: ErrorAnswerURL{
+				textError: "Неизвестный формат",
+			},
+			AnswerData: nil,
+		}
+		mess.ReverseCh <- answerMess
+		log.Debug("Неизвестный формат")
+	}
 }
 
 // обработчик для сообщений ChangeOne
 func (url *urlStorage) handlerMessChangeOne(mess UrlMessInput) {
-
+	mess.ReverseCh <- AnswerMessAPI{
+		Error: ErrorAnswerURL{
+			textError: "Метод не готов",
+		},
+		AnswerData: nil,
+	}
 }
 
 // обработчик для сообщений AddOne
 func (url *urlStorage) handlerMessAddOne(mess UrlMessInput) {
-
+	mess.ReverseCh <- AnswerMessAPI{
+		Error: ErrorAnswerURL{
+			textError: "Метод не готов",
+		},
+		AnswerData: nil,
+	}
 }
 
 func (url *urlStorage) getDBConnData(mess UrlMessInput) {
 
+}
+
+// Метод для получения парметров одного подключения
+func (url *urlStorage) getOneConn(key DBAlias) (ConnDBData, interface{}) {
+	data, ok := url.storage[key]
+	if ok {
+		return data, nil
+	} else {
+		return ConnDBData{}, ErrorAnswerURL{
+			textError: fmt.Sprintf("Не найдены параметры подключения по ключу: %s", key),
+		}
+	}
+}
+
+// Функция преобразует парметры подключения к БД в URL
+func CreateUrlFromStruct(connData ConnDBData) ConnDBURL {
+	return ConnDBURL(
+		fmt.Sprintf(
+			"postgres://%s:%s@%s:%s/%s",
+			connData.User,
+			connData.Password,
+			connData.Host,
+			connData.Port,
+			connData.NameDB,
+		),
+	)
 }
 
 // метод получает данные конфигураций БД и записывает их в urlStorage.storage
