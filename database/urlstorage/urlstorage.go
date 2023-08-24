@@ -43,7 +43,71 @@ func (url *urlStorage) urlMain() {
 	}
 }
 
+// Метод для распределения сообщений между методами обработчиками
 func (url *urlStorage) processMess(mess UrlMessInput) {
+	switch mess.Message.Method {
+	case GetAll:
+		// log.Debug("заглушка processMess.GetAll")
+		url.handlerMessGetAll(mess)
+	case GetOne:
+		log.Debug("заглушка processMess.GetOne")
+		url.handlerMessGetOne(mess)
+	case ChangeOne:
+		log.Debug("заглушка processMess.ChangeOne")
+		url.handlerMessChangeOne(mess)
+	case AddOne:
+		log.Debug("заглушка processMess.AddOne")
+		url.handlerMessAddOne(mess)
+	}
+}
+
+// обработчик для сообщений GetAll
+func (url *urlStorage) handlerMessGetAll(mess UrlMessInput) {
+	switch mess.Message.Format {
+
+	case FormatURL:
+		answerMess := AnswerMessAPI[StorageConnDB]{
+			Error: ErrorAnswerURL{
+				textError: "Данный формат недоступен для API",
+			},
+			AnswerData: nil,
+		}
+		mess.ReverseCh <- answerMess
+		log.Debug("Неверный формат для отправки параметров БД")
+
+	case FormatStruct:
+		answerData := CopyMap(url.storage)
+		answerMess := AnswerMessAPI[StorageConnDB]{
+			Error:      nil,
+			AnswerData: answerData,
+		}
+		mess.ReverseCh <- answerMess
+		log.Debug("Данные о параметрах подключения отправлены")
+
+	default:
+		answerMess := AnswerMessAPI[StorageConnDB]{
+			Error: ErrorAnswerURL{
+				textError: "Неизвестный формат",
+			},
+			AnswerData: nil,
+		}
+		mess.ReverseCh <- answerMess
+		log.Debug("Неизвестный формат")
+	}
+}
+
+// обработчик для сообщений GetOne
+func (url *urlStorage) handlerMessGetOne(mess UrlMessInput) {
+
+}
+
+// обработчик для сообщений ChangeOne
+func (url *urlStorage) handlerMessChangeOne(mess UrlMessInput) {
+
+}
+
+// обработчик для сообщений AddOne
+func (url *urlStorage) handlerMessAddOne(mess UrlMessInput) {
 
 }
 

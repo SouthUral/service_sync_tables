@@ -56,3 +56,11 @@ type DBAlias string
 type ConfEnum struct {
 	UrlStoragePass string `json:"url_storage_path"`
 }
+
+type ErrorAnswerURL struct {
+	textError string
+}
+
+func (errStruct *ErrorAnswerURL) Error() string {
+	return errStruct.textError
+}
