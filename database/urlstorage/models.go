@@ -1,5 +1,7 @@
 package urlstorage
 
+import "fmt"
+
 // канал для получения соообщений в urlstorage от других модулей
 type InputUrlStorageAPIch chan UrlMessInput
 
@@ -21,16 +23,16 @@ type URLConnData string
 
 // Сообщение которое должен передать модуль API (или другой модуль), с каналом для отправки ответа
 type UrlMessInput struct {
-	Message   InputMessage[any]
+	Message   InputMessage
 	ReverseCh ReverseAPIch
 }
 
 // Сообщение которое будет передано в структуре UrlMessInput для модуля urlstorage
-type InputMessage[dataForChange JsonFormat | any] struct {
-	Method     string        // метод получить один | получить все | изменить | добавить
-	Format     string        // формат для получения (json или url)
-	ChangeData dataForChange // сюда записываются либо данные для изменения либо данные для добавления
-	SearchFor  DBAlias       // при установленом методе (получить один) в это поле нужно записать alias, если не указать это поле то?
+type InputMessage struct {
+	Method     string     // метод получить один | получить все | изменить | добавить
+	Format     string     // формат для получения (json или url)
+	ChangeData JsonFormat // сюда записываются либо данные для изменения либо данные для добавления
+	SearchFor  DBAlias    // при установленом методе (получить один) в это поле нужно записать alias, если не указать это поле то?
 }
 
 // структура для хранения данных о подключении к БД
@@ -42,7 +44,43 @@ type ConnDBData struct {
 	Password string `json:"password"`
 }
 
+// Метод структуры ConnDBData для генерации map[string]string по полям структуры
+func (conn *ConnDBData) makeMapStruct() map[string]string {
+	return map[string]string{
+		"host":     conn.Host,
+		"port":     conn.Port,
+		"name_db":  conn.NameDB,
+		"user":     conn.User,
+		"password": conn.Password,
+	}
+}
+
+// Метод для заполения структура данными из map[string]string
+func (conn *ConnDBData) fillingStruct(data map[string]string) interface{} {
+	for key, item := range data {
+		switch key {
+		case "host":
+			conn.Host = item
+		case "port":
+			conn.Port = item
+		case "name_db":
+			conn.NameDB = item
+		case "user":
+			conn.User = item
+		case "password":
+			conn.Password = item
+		default:
+			return ErrorAnswerURL{
+				textError: fmt.Sprintf("Неизвестный ключ: %s", key),
+			}
+		}
+	}
+	return nil
+}
+
 // структура для выгрузки и загрузки в json
+// Так же эта структура может использоваться для изменения параметров
+// подключения со стороны API
 type JsonFormat struct {
 	DBAlias  string     `json:"db_alias"`
 	ConnData ConnDBData `json:"conn_data"`

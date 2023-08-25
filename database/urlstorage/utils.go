@@ -25,3 +25,19 @@ func CreateUrlFromStruct(connData ConnDBData) ConnDBURL {
 		),
 	)
 }
+
+// Функция для проверки структуры ConnDBData на заполенность полей.
+// Первым элементом возвращает bool=True если все поля заполены bool=False если не все поля заполены.
+// Вторым элементом возвращает map[string]string с полями которые заполнены.
+func checkConnDBData(data ConnDBData) (bool, map[string]string) {
+	var result map[string]string
+	fieldIn := true
+	for key, item := range data.makeMapStruct() {
+		if item != "" {
+			result[key] = item
+		} else {
+			fieldIn = false
+		}
+	}
+	return fieldIn, result
+}
