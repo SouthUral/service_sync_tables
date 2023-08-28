@@ -5,8 +5,6 @@ package urlstorage
 import (
 	// "fmt"
 
-	"fmt"
-
 	Config "github.com/SouthUral/service_sync_tables/config"
 
 	log "github.com/sirupsen/logrus"
@@ -58,17 +56,5 @@ func (url *urlStorage) processMess(mess UrlMessInput) {
 	case AddOne:
 		log.Debug("заглушка processMess.AddOne")
 		url.handlerMessAddOne(mess)
-	}
-}
-
-// Метод для получения парметров одного подключения
-func (url *urlStorage) getOneConn(key DBAlias) (ConnDBData, interface{}) {
-	data, ok := url.storage[key]
-	if ok {
-		return data, nil
-	} else {
-		return ConnDBData{}, ErrorAnswerURL{
-			textError: fmt.Sprintf("Не найдены параметры подключения по ключу: %s", key),
-		}
 	}
 }

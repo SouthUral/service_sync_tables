@@ -27,6 +27,18 @@ func (url *urlStorage) handlerMessGetAll(mess UrlMessInput) {
 	}
 }
 
+// Метод для получения парметров одного подключения
+func (url *urlStorage) getOneConn(key DBAlias) (ConnDBData, interface{}) {
+	data, ok := url.storage[key]
+	if ok {
+		return data, nil
+	} else {
+		return ConnDBData{}, ErrorAnswerURL{
+			textError: fmt.Sprintf("Не найдены параметры подключения по ключу: %s", key),
+		}
+	}
+}
+
 // обработчик для сообщений GetOne
 func (url *urlStorage) handlerMessGetOne(mess UrlMessInput) {
 	switch mess.Message.Format {
@@ -75,19 +87,28 @@ func (url *urlStorage) handlerMessChangeOne(mess UrlMessInput) {
 			sendErrorMess(err, mess.ReverseCh)
 			return
 		}
+		url.storage[DBAlias(key)] = urlData
 	}
 
+	url.WriteDataToJson()
+	// Отправка пустого ответа (без ошибки)
 	sendAnswerMess[any](nil, mess.ReverseCh)
 }
 
 // обработчик для сообщений AddOne
 func (url *urlStorage) handlerMessAddOne(mess UrlMessInput) {
-	mess.ReverseCh <- AnswerMessAPI{
-		Error: ErrorAnswerURL{
-			textError: "Метод не готов",
-		},
-		AnswerData: nil,
+	key := mess.Message.ChangeData.DBAlias
+	data := mess.Message.ChangeData.ConnData
+
+	check, _ := checkConnDBData(data)
+	if check {
+		url.storage[DBAlias(key)] = data
+	} else {
+		sendErrorMess("Есть незаполенные обязательные поля", mess.ReverseCh)
+		return
 	}
+	url.WriteDataToJson()
+	sendAnswerMess[any](nil, mess.ReverseCh)
 }
 
 // метод получает данные конфигураций БД и записывает их в urlStorage.storage
@@ -101,6 +122,11 @@ func (url *urlStorage) GetDataFromJson() {
 	for _, item := range bootJsonData {
 		url.storage[DBAlias(item.DBAlias)] = item.ConnData
 	}
+}
+
+// Метод для записи данных в json
+func (url *urlStorage) WriteDataToJson() {
+	JsonWrite(url.storage, url.urlStoragePath)
 }
 
 // Функция для отправки сообщения с ошибкой в канал.

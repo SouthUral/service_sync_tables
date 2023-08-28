@@ -30,7 +30,7 @@ func JsonRead(resultTypeData *StorageConnDB, FileName string) any {
 // На вход получает слайс с заполненными данными структурами, которые будут записаны в файл,
 // и название файла, в который нужно произвести запись.
 // Возвращает либо nil если запись произошла успешно, либо err.
-func JsonWrite(data []interface{}, FileName string) interface{} {
+func JsonWrite(data StorageConnDB, FileName string) interface{} {
 	jsonData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		log.Error(err)
