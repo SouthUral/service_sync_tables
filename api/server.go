@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 
+	url "github.com/SouthUral/service_sync_tables/database/urlstorage"
 	_ "github.com/SouthUral/service_sync_tables/docs"
 	tools "github.com/SouthUral/service_sync_tables/tools"
 
@@ -11,15 +12,17 @@ import (
 )
 
 type Server struct {
-	Port     string
-	OutputCh OutputAPIChan
+	Port       string
+	OutputCh   OutputAPIChan
+	URLInputCh url.InputUrlStorageAPIch
 }
 
 // инициализатор go сервера
-func InitServer(OutPutChan OutputAPIChan) {
+func InitServer(OutPutChan OutputAPIChan, URLChan url.InputUrlStorageAPIch) {
 	srv := Server{
-		Port:     ":" + tools.GetEnv("SERVER_PORT"),
-		OutputCh: OutPutChan,
+		Port:       ":" + tools.GetEnv("SERVER_PORT"),
+		OutputCh:   OutPutChan,
+		URLInputCh: URLChan,
 	}
 	go srv.StartServer()
 }
@@ -96,6 +99,22 @@ func (srv *Server) startAllSync(w http.ResponseWriter, r *http.Request) {
 func (srv *Server) stopAllSync(w http.ResponseWriter, r *http.Request) {
 	PostMethod(w, r, StopAll, srv.OutputCh, false)
 	log.Info("stopAllSync request processed")
+}
+
+func (srv *Server) GetAllDBConn(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func (srv *Server) GetOneDBConn(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func (srv *Server) ChangeOneDBConn(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func (srv *Server) AddOneDBConn(w http.ResponseWriter, r *http.Request) {
+
 }
 
 // мидлвар с дебаг логом

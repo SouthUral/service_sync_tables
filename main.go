@@ -34,7 +34,7 @@ func main() {
 	outputApiChan := make(Api.OutputAPIChan, 100)
 
 	Mongo.MDBInit(inputMDBchan, outputMDBchan)
-	Api.InitServer(outputApiChan)
+	Api.InitServer(outputApiChan, inputUrlChan)
 	State.InitState(inputMDBchan, outputMDBchan, outputApiChan)
 
 	// инициализация модуля работы с URL

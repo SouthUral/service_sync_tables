@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
+	url "github.com/SouthUral/service_sync_tables/database/urlstorage"
+
 	log "github.com/sirupsen/logrus"
 )
 
@@ -49,6 +51,10 @@ func GetMethod(w http.ResponseWriter, r *http.Request, mess string, OutputCh Out
 	OutputCh <- msg
 	answ, _ := <-newChan
 	JsonWriter(w, answ, http.StatusOK)
+}
+
+func GetURLmethod(w http.ResponseWriter, r *http.Request, method string, OutputCh url.InputUrlStorageAPIch) {
+	url.SendingMess()
 }
 
 // абстрактный метод для POST запросов

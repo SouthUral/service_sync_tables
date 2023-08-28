@@ -6,8 +6,6 @@ import (
 	// "fmt"
 
 	Config "github.com/SouthUral/service_sync_tables/config"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // структура необходимая для работы модуля urlstorage
@@ -51,10 +49,8 @@ func (url *urlStorage) processMess(mess UrlMessInput) {
 	case GetOne:
 		url.handlerMessGetOne(mess)
 	case ChangeOne:
-		log.Debug("заглушка processMess.ChangeOne")
 		url.handlerMessChangeOne(mess)
 	case AddOne:
-		log.Debug("заглушка processMess.AddOne")
 		url.handlerMessAddOne(mess)
 	}
 }
