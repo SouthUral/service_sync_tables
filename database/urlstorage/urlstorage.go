@@ -34,7 +34,6 @@ func (url *urlStorage) urlMain() {
 
 	for {
 		select {
-		// ловит сообщение из mdb
 		case mess := <-url.inputChan:
 			url.processMess(mess)
 		}
@@ -46,8 +45,6 @@ func (url *urlStorage) processMess(mess UrlMessInput) {
 	switch mess.Message.Method {
 	case GetAll:
 		url.handlerMessGetAll(mess)
-	case GetOne:
-		url.handlerMessGetOne(mess)
 	case ChangeOne:
 		url.handlerMessChangeOne(mess)
 	case AddOne:

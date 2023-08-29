@@ -11,18 +11,18 @@ import (
 )
 
 // Метод для отправки сообщения клиенту в JSON
-func JsonWriter(w http.ResponseWriter, data StateAnswer, status int) {
+func JsonWriter[DataType StateAnswer | url.StorageConnDB](w http.ResponseWriter, data DataType, status int, err any) {
 	w.Header().Set("Content-Type", "application/json")
-	if data.Err != nil {
-		errString := fmt.Sprintf("%s", data.Err)
+	if err != nil {
+		errString := fmt.Sprintf("%s", err)
 		ErrorWriter(w, errString, http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(status)
-	err := json.NewEncoder(w).Encode(data)
+	errEncode := json.NewEncoder(w).Encode(data)
 	if err != nil {
-		ErrorWriter(w, err.Error(), http.StatusInternalServerError)
+		ErrorWriter(w, errEncode.Error(), http.StatusInternalServerError)
 	}
 }
 
@@ -50,11 +50,20 @@ func GetMethod(w http.ResponseWriter, r *http.Request, mess string, OutputCh Out
 	}
 	OutputCh <- msg
 	answ, _ := <-newChan
-	JsonWriter(w, answ, http.StatusOK)
+	JsonWriter[StateAnswer](w, answ, http.StatusOK, answ.Err)
 }
 
-func GetURLmethod(w http.ResponseWriter, r *http.Request, method string, OutputCh url.InputUrlStorageAPIch) {
-	url.SendingMess()
+// GET метод для запросов к urlstorage
+func GetURLmethod(w http.ResponseWriter, r *http.Request, OutputCh url.InputUrlStorageAPIch) {
+	if r.Method != http.MethodGet {
+		ErrorWriter(w, "Request error", http.StatusBadRequest)
+		return
+	}
+	result, err := url.AllConn(OutputCh)
+	if err != nil {
+		ErrorWriter(w, "", http.StatusInternalServerError)
+	}
+	JsonWriter[url.StorageConnDB](w, result, http.StatusOK, err)
 }
 
 // абстрактный метод для POST запросов
@@ -68,7 +77,7 @@ func PostMethod(w http.ResponseWriter, r *http.Request, mess string, OutputCh Ou
 	if body {
 		err := json.NewDecoder(r.Body).Decode(&InpData)
 		if err != nil {
-			JsonWriter(w, StateAnswer{Err: err.Error()}, http.StatusBadRequest)
+			JsonWriter(w, StateAnswer{Err: err.Error()}, http.StatusBadRequest, err.Error())
 		}
 	}
 
@@ -90,7 +99,7 @@ func PostMethod(w http.ResponseWriter, r *http.Request, mess string, OutputCh Ou
 			newList = append(newList, vall)
 		}
 		allAnswer.Data = newList
-		JsonWriter(w, allAnswer, http.StatusOK)
+		JsonWriter(w, allAnswer, http.StatusOK, allAnswer.Err)
 	case StopAll:
 		allAnswer := StateAnswer{
 			Info: "stop status of all sync",
@@ -100,10 +109,10 @@ func PostMethod(w http.ResponseWriter, r *http.Request, mess string, OutputCh Ou
 			newList = append(newList, vall)
 		}
 		allAnswer.Data = newList
-		JsonWriter(w, allAnswer, http.StatusOK)
+		JsonWriter(w, allAnswer, http.StatusOK, allAnswer.Err)
 	default:
 		answ, _ := <-newChan
-		JsonWriter(w, answ, http.StatusOK)
+		JsonWriter(w, answ, http.StatusOK, answ.Err)
 	}
 
 }

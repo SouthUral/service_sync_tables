@@ -34,5 +34,9 @@ type ErrorResponse struct {
 	Error  interface{} `json:"error"`
 }
 
+type RequestDBConn struct {
+	Alias string `json:"alias"`
+}
+
 // // Канал для возврата сообщения из State в Api
 // type APImessChan chan StateAnswer

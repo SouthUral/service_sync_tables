@@ -10,60 +10,9 @@ import (
 
 // обработчик для сообщений GetAll
 func (url *urlStorage) handlerMessGetAll(mess UrlMessInput) {
-	switch mess.Message.Format {
-
-	case FormatURL:
-		sendErrorMess("Данный формат недоступен для множественного вывода", mess.ReverseCh)
-		log.Debug("Неверный формат для отправки параметров БД")
-
-	case FormatStruct:
-		answerData := CopyMap(url.storage)
-		sendAnswerMess[StorageConnDB](answerData, mess.ReverseCh)
-		log.Debug("Данные о параметрах подключения отправлены")
-
-	default:
-		sendErrorMess("Неизвестный формат", mess.ReverseCh)
-		log.Debug("Неизвестный формат")
-	}
-}
-
-// Метод для получения парметров одного подключения
-func (url *urlStorage) getOneConn(key DBAlias) (ConnDBData, interface{}) {
-	data, ok := url.storage[key]
-	if ok {
-		return data, nil
-	} else {
-		return ConnDBData{}, ErrorAnswerURL{
-			textError: fmt.Sprintf("Не найдены параметры подключения по ключу: %s", key),
-		}
-	}
-}
-
-// обработчик для сообщений GetOne
-func (url *urlStorage) handlerMessGetOne(mess UrlMessInput) {
-	switch mess.Message.Format {
-
-	case FormatURL:
-		data, err := url.getOneConn(mess.Message.SearchFor)
-		if err != nil {
-			sendErrorMess(err, mess.ReverseCh)
-		} else {
-			urlConn := CreateUrlFromStruct(data)
-			sendAnswerMess[ConnDBURL](urlConn, mess.ReverseCh)
-		}
-
-	case FormatStruct:
-		data, err := url.getOneConn(mess.Message.SearchFor)
-		if err != nil {
-			sendErrorMess(err, mess.ReverseCh)
-		} else {
-			sendAnswerMess[ConnDBData](data, mess.ReverseCh)
-		}
-
-	default:
-		sendErrorMess("Неизвестный формат", mess.ReverseCh)
-		log.Debug("Неизвестный формат")
-	}
+	answerData := CopyMap(url.storage)
+	sendAnswerMess(answerData, mess.ReverseCh)
+	log.Debug("Данные о параметрах подключения отправлены")
 }
 
 // Обработчик для сообщений ChangeOne
@@ -92,7 +41,7 @@ func (url *urlStorage) handlerMessChangeOne(mess UrlMessInput) {
 
 	url.WriteDataToJson()
 	// Отправка пустого ответа (без ошибки)
-	sendAnswerMess[any](nil, mess.ReverseCh)
+	sendAnswerMess(nil, mess.ReverseCh)
 }
 
 // обработчик для сообщений AddOne
@@ -108,7 +57,7 @@ func (url *urlStorage) handlerMessAddOne(mess UrlMessInput) {
 		return
 	}
 	url.WriteDataToJson()
-	sendAnswerMess[any](nil, mess.ReverseCh)
+	sendAnswerMess(nil, mess.ReverseCh)
 }
 
 // метод получает данные конфигураций БД и записывает их в urlStorage.storage
@@ -144,7 +93,7 @@ func sendErrorMess(err interface{}, ch ReverseAPIch) {
 }
 
 // Функция для отправки ответного сообщения (без ошибки = положительный ответ)
-func sendAnswerMess[DataType ConnDBData | any | StorageConnDB | ConnDBURL](answerData DataType, ch ReverseAPIch) {
+func sendAnswerMess(answerData StorageConnDB, ch ReverseAPIch) {
 	answer := AnswerMessAPI{
 		Error:      nil,
 		AnswerData: answerData,

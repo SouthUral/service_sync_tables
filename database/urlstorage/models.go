@@ -11,11 +11,7 @@ type ReverseAPIch chan AnswerMessAPI
 // Структура для ответа модулю API
 type AnswerMessAPI struct {
 	Error      interface{}
-	AnswerData any
-}
-
-type AnswerData[typeAnswer StorageConnDB | URLConnData | any] struct {
-	data typeAnswer
+	AnswerData StorageConnDB
 }
 
 // параметры для подключения к БД в формате url
@@ -30,7 +26,6 @@ type UrlMessInput struct {
 // Сообщение которое будет передано в структуре UrlMessInput для модуля urlstorage
 type InputMessage struct {
 	Method     string     // метод получить один | получить все | изменить | добавить
-	Format     string     // формат для получения (json или url)
 	ChangeData JsonFormat // сюда записываются либо данные для изменения либо данные для добавления
 	SearchFor  DBAlias    // при установленом методе (получить один) в это поле нужно записать alias, если не указать это поле то?
 }
@@ -91,6 +86,9 @@ type BootJsonData []JsonFormat
 
 // словарь содержащий в качестве ключа alias БД а в качетсве значения структуру ConnDBData
 type StorageConnDB map[DBAlias]ConnDBData
+
+// Словарь для хранения данных о подключениях в формате URL
+type ConnDBURLs map[DBAlias]ConnDBURL
 
 // alias для БД
 type DBAlias string

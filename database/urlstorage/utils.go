@@ -26,6 +26,15 @@ func CreateUrlFromStruct(connData ConnDBData) ConnDBURL {
 	)
 }
 
+// Создает словарь с URLs вместо структуры ConnDBData
+func CreateMapURLs(data StorageConnDB) ConnDBURLs {
+	resData := ConnDBURLs{}
+	for key, value := range data {
+		resData[key] = CreateUrlFromStruct(value)
+	}
+	return resData
+}
+
 // Функция для проверки структуры ConnDBData на заполенность полей.
 // Первым элементом возвращает bool=True если все поля заполены bool=False если не все поля заполены.
 // Вторым элементом возвращает map[string]string с полями которые заполнены.
