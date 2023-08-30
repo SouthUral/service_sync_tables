@@ -39,10 +39,6 @@ func ErrorWriter(w http.ResponseWriter, err string, status int) {
 
 // абстрактный метод для GET запросов
 func GetMethod(w http.ResponseWriter, r *http.Request, mess string, OutputCh OutputAPIChan) {
-	if r.Method != http.MethodGet {
-		ErrorWriter(w, "Request error", http.StatusBadRequest)
-		return
-	}
 	newChan := make(InputAPIChan)
 	msg := APImessage{
 		Message: mess,
@@ -55,11 +51,6 @@ func GetMethod(w http.ResponseWriter, r *http.Request, mess string, OutputCh Out
 
 // GET метод для запросов к urlstorage
 func GetURLmethod(w http.ResponseWriter, r *http.Request, OutputCh url.InputUrlStorageAPIch) {
-	if r.Method != http.MethodGet {
-		ErrorWriter(w, "Request error", http.StatusBadRequest)
-		return
-	}
-
 	result, err := url.AllConn(OutputCh)
 	if err != nil {
 		ErrorWriter(w, err.Error(), http.StatusInternalServerError)
@@ -88,10 +79,6 @@ func getOneURLMethod(w http.ResponseWriter, r *http.Request, OutputCh url.InputU
 
 // абстрактный метод для POST запросов
 func PostMethod(w http.ResponseWriter, r *http.Request, mess string, OutputCh OutputAPIChan, body bool) {
-	if r.Method != http.MethodPost {
-		ErrorWriter(w, "Request error", http.StatusBadRequest)
-		return
-	}
 	var InpData InputDataApi
 	var err any
 
