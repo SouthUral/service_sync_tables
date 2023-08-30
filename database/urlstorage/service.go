@@ -41,7 +41,6 @@ func (url *urlStorage) handlerMessChangeOne(mess UrlMessInput) {
 	}
 
 	url.WriteDataToJson()
-	// Отправка пустого ответа (без ошибки)
 	sendAnswerMess(nil, mess.ReverseCh)
 }
 

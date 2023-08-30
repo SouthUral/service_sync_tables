@@ -77,6 +77,27 @@ func getOneURLMethod(w http.ResponseWriter, r *http.Request, OutputCh url.InputU
 	JsonWriter[url.ConnDBData](w, result, http.StatusOK, err)
 }
 
+func changeOneURLMethod(w http.ResponseWriter, r *http.Request, OutputCh url.InputUrlStorageAPIch) {
+	bodyData, err := readBody[url.JsonFormat](w, r)
+	if err != nil {
+		return
+	}
+
+	resError := url.ChangeOneConn(bodyData, OutputCh)
+	if resError != nil {
+		ErrorWriter(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	answer := StateAnswer{
+		Info: "Данные изменены",
+	}
+	JsonWriter[StateAnswer](w, answer, http.StatusOK, resError)
+}
+
+func addOneURLMethod(w http.ResponseWriter, r *http.Request, OutputCh url.InputUrlStorageAPIch) {
+
+}
+
 // абстрактный метод для POST запросов
 func PostMethod(w http.ResponseWriter, r *http.Request, mess string, OutputCh OutputAPIChan, body bool) {
 	var InpData InputDataApi
@@ -126,7 +147,7 @@ func PostMethod(w http.ResponseWriter, r *http.Request, mess string, OutputCh Ou
 }
 
 // Функция для парсинга входящего сообщения из тела запроса
-func readBody[Data InputDataApi | RequestDBConn](w http.ResponseWriter, r *http.Request) (Data, error) {
+func readBody[Data InputDataApi | RequestDBConn | url.JsonFormat](w http.ResponseWriter, r *http.Request) (Data, error) {
 	var inpData Data
 	err := json.NewDecoder(r.Body).Decode(&inpData)
 	if err != nil {
