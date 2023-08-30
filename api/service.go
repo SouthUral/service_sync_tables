@@ -11,7 +11,7 @@ import (
 )
 
 // Метод для отправки сообщения клиенту в JSON
-func JsonWriter[DataType StateAnswer | url.StorageConnDB](w http.ResponseWriter, data DataType, status int, err any) {
+func JsonWriter[DataType StateAnswer | url.StorageConnDB | url.ConnDBData](w http.ResponseWriter, data DataType, status int, err any) {
 	w.Header().Set("Content-Type", "application/json")
 	if err != nil {
 		errString := fmt.Sprintf("%s", err)
@@ -59,11 +59,31 @@ func GetURLmethod(w http.ResponseWriter, r *http.Request, OutputCh url.InputUrlS
 		ErrorWriter(w, "Request error", http.StatusBadRequest)
 		return
 	}
+
 	result, err := url.AllConn(OutputCh)
 	if err != nil {
-		ErrorWriter(w, "", http.StatusInternalServerError)
+		ErrorWriter(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	JsonWriter[url.StorageConnDB](w, result, http.StatusOK, err)
+}
+
+// GET метод для получения одного параметра из urlstorage
+func getOneURLMethod(w http.ResponseWriter, r *http.Request, OutputCh url.InputUrlStorageAPIch) {
+	bodyData, err := readBody[RequestDBConn](w, r)
+	if err != nil {
+		return
+	}
+	if bodyData.Alias == "" {
+		ErrorWriter(w, "Неверный ключ, или данные не заполнены", http.StatusBadRequest)
+		return
+	}
+	result, err := url.GetOneConn(bodyData.Alias, OutputCh)
+	if err != nil {
+		ErrorWriter(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	JsonWriter[url.ConnDBData](w, result, http.StatusOK, err)
 }
 
 // абстрактный метод для POST запросов
@@ -73,11 +93,12 @@ func PostMethod(w http.ResponseWriter, r *http.Request, mess string, OutputCh Ou
 		return
 	}
 	var InpData InputDataApi
+	var err any
 
 	if body {
-		err := json.NewDecoder(r.Body).Decode(&InpData)
+		InpData, err = readBody[InputDataApi](w, r)
 		if err != nil {
-			JsonWriter(w, StateAnswer{Err: err.Error()}, http.StatusBadRequest, err.Error())
+			return
 		}
 	}
 
@@ -115,4 +136,15 @@ func PostMethod(w http.ResponseWriter, r *http.Request, mess string, OutputCh Ou
 		JsonWriter(w, answ, http.StatusOK, answ.Err)
 	}
 
+}
+
+// Функция для парсинга входящего сообщения из тела запроса
+func readBody[Data InputDataApi | RequestDBConn](w http.ResponseWriter, r *http.Request) (Data, error) {
+	var inpData Data
+	err := json.NewDecoder(r.Body).Decode(&inpData)
+	if err != nil {
+		JsonWriter[StateAnswer](w, StateAnswer{Err: err.Error()}, http.StatusBadRequest, err.Error())
+		return inpData, err
+	}
+	return inpData, nil
 }

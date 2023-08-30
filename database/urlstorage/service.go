@@ -1,6 +1,7 @@
 package urlstorage
 
 import (
+	"errors"
 	"fmt"
 
 	tools "github.com/SouthUral/service_sync_tables/tools"
@@ -22,7 +23,7 @@ func (url *urlStorage) handlerMessChangeOne(mess UrlMessInput) {
 
 	urlData, ok := url.storage[DBAlias(key)]
 	if !ok {
-		errorMess := fmt.Sprintf("Указанный alias: %s не найден", key)
+		errorMess := fmt.Errorf("Указанный alias: %s не найден", key)
 		sendErrorMess(errorMess, mess.ReverseCh)
 		return
 	}
@@ -53,7 +54,7 @@ func (url *urlStorage) handlerMessAddOne(mess UrlMessInput) {
 	if check {
 		url.storage[DBAlias(key)] = data
 	} else {
-		sendErrorMess("Есть незаполенные обязательные поля", mess.ReverseCh)
+		sendErrorMess(errors.New("Есть незаполенные обязательные поля"), mess.ReverseCh)
 		return
 	}
 	url.WriteDataToJson()
@@ -79,16 +80,9 @@ func (url *urlStorage) WriteDataToJson() {
 }
 
 // Функция для отправки сообщения с ошибкой в канал.
-func sendErrorMess(err interface{}, ch ReverseAPIch) {
+func sendErrorMess(err error, ch ReverseAPIch) {
 	var answer AnswerMessAPI
-	switch err.(type) {
-	case string:
-		answer.Error = ErrorAnswerURL{
-			textError: fmt.Sprintf("%s", err),
-		}
-	case ErrorAnswerURL:
-		answer.Error = err
-	}
+	answer.Error = err
 	ch <- answer
 }
 

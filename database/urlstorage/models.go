@@ -1,6 +1,9 @@
 package urlstorage
 
-import "fmt"
+import (
+	"fmt"
+	// "errors"
+)
 
 // канал для получения соообщений в urlstorage от других модулей
 type InputUrlStorageAPIch chan UrlMessInput
@@ -10,7 +13,7 @@ type ReverseAPIch chan AnswerMessAPI
 
 // Структура для ответа модулю API
 type AnswerMessAPI struct {
-	Error      interface{}
+	Error      error
 	AnswerData StorageConnDB
 }
 
@@ -51,7 +54,7 @@ func (conn *ConnDBData) makeMapStruct() map[string]string {
 }
 
 // Метод для заполения структура данными из map[string]string
-func (conn *ConnDBData) fillingStruct(data map[string]string) interface{} {
+func (conn *ConnDBData) fillingStruct(data map[string]string) error {
 	for key, item := range data {
 		switch key {
 		case "host":
@@ -65,9 +68,7 @@ func (conn *ConnDBData) fillingStruct(data map[string]string) interface{} {
 		case "password":
 			conn.Password = item
 		default:
-			return ErrorAnswerURL{
-				textError: fmt.Sprintf("Неизвестный ключ: %s", key),
-			}
+			return fmt.Errorf("Неизвестный ключ: %s", key)
 		}
 	}
 	return nil
@@ -100,6 +101,10 @@ type ConfEnum struct {
 	UrlStoragePass string `json:"url_storage_path"`
 }
 
+type errA interface {
+	Error() string
+}
+
 type ErrorAnswerURL struct {
 	textError string
 }
@@ -107,3 +112,11 @@ type ErrorAnswerURL struct {
 func (errStruct *ErrorAnswerURL) Error() string {
 	return errStruct.textError
 }
+
+// func Example(N bool) error {
+// 	if N {
+// 		err := errors.New("some error")
+// 		return err
+// 	}
+// 	return nil
+// }

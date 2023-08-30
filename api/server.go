@@ -36,6 +36,7 @@ func (srv *Server) StartServer() {
 	http.HandleFunc("/start-allSync", midlware(srv.startAllSync))
 	http.HandleFunc("/stop-allSync", midlware(srv.stopAllSync))
 	http.HandleFunc("/all-conn-bd", midlware(srv.GetAllDBConn))
+	http.HandleFunc("/one-conn-bd", midlware(srv.GetOneDBConn))
 	http.ListenAndServe(srv.Port, nil)
 
 }
@@ -107,7 +108,7 @@ func (srv *Server) GetAllDBConn(w http.ResponseWriter, r *http.Request) {
 }
 
 func (srv *Server) GetOneDBConn(w http.ResponseWriter, r *http.Request) {
-
+	getOneURLMethod(w, r, srv.URLInputCh)
 }
 
 func (srv *Server) ChangeOneDBConn(w http.ResponseWriter, r *http.Request) {

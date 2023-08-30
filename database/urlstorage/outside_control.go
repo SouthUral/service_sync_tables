@@ -1,9 +1,11 @@
 package urlstorage
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // Функция для отправки сообщения в urlstorage и получения ответа
-func SendingMess(mess InputMessage, outputCh InputUrlStorageAPIch) (StorageConnDB, any) {
+func SendingMess(mess InputMessage, outputCh InputUrlStorageAPIch) (StorageConnDB, error) {
 	reverseCh := make(ReverseAPIch, 0)
 	outgoingMess := UrlMessInput{
 		Message:   mess,
@@ -18,7 +20,7 @@ func SendingMess(mess InputMessage, outputCh InputUrlStorageAPIch) (StorageConnD
 }
 
 // Внешний метод для получения параметров всех БД
-func AllConn(outputCh InputUrlStorageAPIch) (StorageConnDB, any) {
+func AllConn(outputCh InputUrlStorageAPIch) (StorageConnDB, error) {
 	outputMess := InputMessage{
 		Method: GetAll,
 	}
@@ -27,7 +29,7 @@ func AllConn(outputCh InputUrlStorageAPIch) (StorageConnDB, any) {
 }
 
 // Внешний метод для получения параметров одного подключения
-func GetOneConn(alias string, outputCh InputUrlStorageAPIch) (ConnDBData, any) {
+func GetOneConn(alias string, outputCh InputUrlStorageAPIch) (ConnDBData, error) {
 	answer, err := AllConn(outputCh)
 	if err != nil {
 		return ConnDBData{}, err
@@ -36,9 +38,7 @@ func GetOneConn(alias string, outputCh InputUrlStorageAPIch) (ConnDBData, any) {
 	if ok {
 		return value, nil
 	}
-	return ConnDBData{}, ErrorAnswerURL{
-		textError: fmt.Sprintf("Конфигурация для подключения по ключу %s не найдена", alias),
-	}
+	return ConnDBData{}, fmt.Errorf("Конфигурация для подключения по ключу %s не найдена", alias)
 }
 
 // switch format {
