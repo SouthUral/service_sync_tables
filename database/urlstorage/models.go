@@ -2,7 +2,6 @@ package urlstorage
 
 import (
 	"fmt"
-	// "errors"
 )
 
 // канал для получения соообщений в urlstorage от других модулей
@@ -112,11 +111,3 @@ type ErrorAnswerURL struct {
 func (errStruct *ErrorAnswerURL) Error() string {
 	return errStruct.textError
 }
-
-// func Example(N bool) error {
-// 	if N {
-// 		err := errors.New("some error")
-// 		return err
-// 	}
-// 	return nil
-// }

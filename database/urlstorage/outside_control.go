@@ -70,16 +70,3 @@ func absAddMethod(data JsonFormat, outputCh InputUrlStorageAPIch, mess string) e
 	_, err := SendingMess(outputMess, outputCh)
 	return err
 }
-
-// switch format {
-// case FormatStruct:
-// 	return answer, err
-// case FormatURL:
-// 	answerURLs := CreateMapURLs(answer)
-// 	return answerURLs, err
-// default:
-// 	err := ErrorAnswerURL{
-// 		textError: "Неверный формат",
-// 	}
-// 	return nil, err
-// }
