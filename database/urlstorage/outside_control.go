@@ -41,6 +41,16 @@ func GetOneConn(alias string, outputCh InputUrlStorageAPIch) (ConnDBData, error)
 	return ConnDBData{}, fmt.Errorf("Конфигурация для подключения по ключу %s не найдена", alias)
 }
 
+// Внешний метод для получения параметров одного подключения в виде URL
+func GetOneConnURL(alias string, outputCh InputUrlStorageAPIch) (string, error) {
+	resConn, err := GetOneConn(alias, outputCh)
+	if err != nil {
+		return "", err
+	}
+	URL := CreateUrlFromStruct(resConn)
+	return string(URL), nil
+}
+
 // Внешний метод для изменения параметров подключения
 func ChangeOneConn(data JsonFormat, outputCh InputUrlStorageAPIch) error {
 	return absAddMethod(data, outputCh, ChangeOne)
