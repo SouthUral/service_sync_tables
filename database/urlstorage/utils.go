@@ -39,9 +39,10 @@ func CreateMapURLs(data StorageConnDB) ConnDBURLs {
 // Первым элементом возвращает bool=True если все поля заполены bool=False если не все поля заполены.
 // Вторым элементом возвращает map[string]string с полями которые заполнены.
 func checkConnDBData(data ConnDBData) (bool, map[string]string) {
-	var result map[string]string
+	result := make(map[string]string, 0)
 	fieldIn := true
-	for key, item := range data.makeMapStruct() {
+	mapData := data.makeMapStruct()
+	for key, item := range mapData {
 		if item != "" {
 			result[key] = item
 		} else {

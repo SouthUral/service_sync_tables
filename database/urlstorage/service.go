@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	tools "github.com/SouthUral/service_sync_tables/tools"
-
 	log "github.com/sirupsen/logrus"
 )
 
@@ -63,7 +61,7 @@ func (url *urlStorage) handlerMessAddOne(mess UrlMessInput) {
 // метод получает данные конфигураций БД и записывает их в urlStorage.storage
 func (url *urlStorage) GetDataFromJson() {
 	bootJsonData := BootJsonData{}
-	err := tools.JsonRead(&bootJsonData, url.urlStoragePath)
+	err := JsonRead(&bootJsonData, url.urlStoragePath)
 	if err != nil {
 		log.Error("Не удалось получить данные конфигураций БД")
 		return
@@ -75,7 +73,15 @@ func (url *urlStorage) GetDataFromJson() {
 
 // Метод для записи данных в json
 func (url *urlStorage) WriteDataToJson() {
-	JsonWrite(url.storage, url.urlStoragePath)
+	dataForWrite := make(BootJsonData, 0)
+	for key, item := range url.storage {
+		writeItem := JsonFormat{
+			DBAlias:  string(key),
+			ConnData: item,
+		}
+		dataForWrite = append(dataForWrite, writeItem)
+	}
+	JsonWrite(dataForWrite, url.urlStoragePath)
 }
 
 // Функция для отправки сообщения с ошибкой в канал.

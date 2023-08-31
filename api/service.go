@@ -95,7 +95,20 @@ func changeOneURLMethod(w http.ResponseWriter, r *http.Request, OutputCh url.Inp
 }
 
 func addOneURLMethod(w http.ResponseWriter, r *http.Request, OutputCh url.InputUrlStorageAPIch) {
+	bodyData, err := readBody[url.JsonFormat](w, r)
+	if err != nil {
+		return
+	}
 
+	resError := url.AddOneConn(bodyData, OutputCh)
+	if resError != nil {
+		ErrorWriter(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	answer := StateAnswer{
+		Info: "Данные добавлены",
+	}
+	JsonWriter[StateAnswer](w, answer, http.StatusOK, resError)
 }
 
 // абстрактный метод для POST запросов

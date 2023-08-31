@@ -38,7 +38,8 @@ func (srv *Server) StartServer() {
 	http.HandleFunc("/stop-allSync", midlwarePOST(srv.stopAllSync))
 	http.HandleFunc("/all-conn-bd", midlwareGET(srv.GetAllDBConn))
 	http.HandleFunc("/one-conn-bd", midlwareGET(srv.GetOneDBConn))
-	http.HandleFunc("/change-one-conn-bd", midlwarePOST(srv.ChangeOneDBConn))
+	http.HandleFunc("/change-one-conn-bd", midlwarePUT(srv.ChangeOneDBConn))
+	http.HandleFunc("/add-one-conn-bd", midlwarePOST(srv.AddOneDBConn))
 	http.ListenAndServe(srv.Port, nil)
 
 }
@@ -118,11 +119,11 @@ func (srv *Server) GetOneDBConn(w http.ResponseWriter, r *http.Request) {
 func (srv *Server) ChangeOneDBConn(w http.ResponseWriter, r *http.Request) {
 	changeOneURLMethod(w, r, srv.URLInputCh)
 	log.Info("ChangeOneDBConn request processed")
-
 }
 
 func (srv *Server) AddOneDBConn(w http.ResponseWriter, r *http.Request) {
-
+	addOneURLMethod(w, r, srv.URLInputCh)
+	log.Info("AddOneDBConn request processed")
 }
 
 // мидлвар с дебаг логом
@@ -143,6 +144,19 @@ func midlwarePOST(handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			log.Error(fmt.Sprintf("Вызван метод %s, ожидается метод %s", r.Method, http.MethodPost))
+			ErrorWriter(w, "Request error", http.StatusBadRequest)
+			return
+		}
+		log.Debug(r.Method)
+		handler(w, r)
+	}
+}
+
+// мидлвар с дебаг логом
+func midlwarePUT(handler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			log.Error(fmt.Sprintf("Вызван метод %s, ожидается метод %s", r.Method, http.MethodPut))
 			ErrorWriter(w, "Request error", http.StatusBadRequest)
 			return
 		}

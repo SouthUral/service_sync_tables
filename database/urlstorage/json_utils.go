@@ -11,7 +11,7 @@ import (
 // На вход получает тип , в который нужно загрузить данные,
 // и название файла, в который нужно произвести запись.
 // Возвращает пару (результат, ошибку).
-func JsonRead(resultTypeData *StorageConnDB, FileName string) any {
+func JsonRead(resultTypeData *BootJsonData, FileName string) any {
 	data, err := os.ReadFile(FileName)
 	if err != nil {
 		log.Error(err)
@@ -30,7 +30,7 @@ func JsonRead(resultTypeData *StorageConnDB, FileName string) any {
 // На вход получает слайс с заполненными данными структурами, которые будут записаны в файл,
 // и название файла, в который нужно произвести запись.
 // Возвращает либо nil если запись произошла успешно, либо err.
-func JsonWrite(data StorageConnDB, FileName string) interface{} {
+func JsonWrite(data BootJsonData, FileName string) interface{} {
 	jsonData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		log.Error(err)
