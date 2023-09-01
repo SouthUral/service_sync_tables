@@ -11,54 +11,50 @@ import (
 )
 
 // метод для подключения к БД
-func pgConnect(dbURL string) interface{} {
+func pgConnect(dbURL string) (*pgx.Conn, error) {
 	connect, err := pgx.Connect(context.Background(), dbURL)
 	if err != nil {
 		log.Error(fmt.Sprintf("Connect error: %s", dbURL))
-		return err
+		return connect, err
 	}
 	log.Info(fmt.Sprintf("Connect is ready: %s", dbURL))
-	return connect
+	return connect, nil
 }
 
 // Структура для хранения каналов, которые переданы при инициализации в main
 type postgresMain struct {
-	OutgoingChan OutgoingChanSync         // канал для сообщений от горутин синхронизаций
+	outgoingChan OutgoingChanSync         // канал для сообщений от горутин синхронизаций
 	urlIncomCh   url.InputUrlStorageAPIch // канал для запросов к модулю urlstorage
 	pgInputch    IncomCh                  // канал для получения сообщений от других модулей
 	mainDB       string                   // alias БД из которой будет производится выгрузка
 }
 
-func InitPostgres(urlIncomCh url.InputUrlStorageAPIch, pgInputch IncomCh) {
+func InitPostgres(urlIncomCh url.InputUrlStorageAPIch, pgInputch IncomCh, pgOutGoingCh OutgoingChanSync) {
 	pg := postgresMain{
-		urlIncomCh: urlIncomCh,
-		pgInputch:  pgInputch,
-		mainDB:     "main_db",
+		outgoingChan: pgOutGoingCh,
+		urlIncomCh:   urlIncomCh,
+		pgInputch:    pgInputch,
+		mainDB:       "main_db",
 	}
 	// Запуск основного потока postgres
 	go pg.mainWorkPg()
 	log.Debug(fmt.Sprintf("Создана структура %T", pg))
 }
 
+// Основной поток модуля postgres
 func (pg *postgresMain) mainWorkPg() {
 	for {
 		select {
 		case mess := <-pg.pgInputch:
-			mainUrlConn, err := url.GetOneConnURL(pg.mainDB, pg.urlIncomCh)
-			if err != nil {
-				log.Error(fmt.Sprintf("Не найден URL для mainDB: %s", err.Error()))
-				return
+			URLs := checkDBalias(mess, pg.mainDB, pg.urlIncomCh)
+			if URLs.err != nil {
+				// Отправить сообщение об ошибке в state
 			}
-			urlConn, err := url.GetOneConnURL(mess.Database, pg.urlIncomCh)
-			if err != nil {
-				log.Error(err.Error())
-				return
-			}
-			go mainStreamSync(mainUrlConn, urlConn)
+			go pg.mainStreamSync(URLs.urlMainDb, URLs.urlSecondDb)
 		}
 	}
 }
 
-func mainStreamSync(mainUrl, secondUrl string) {
+func (pg *postgresMain) mainStreamSync(mainUrl, secondUrl string) {
 
 }

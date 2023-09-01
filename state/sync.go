@@ -6,6 +6,7 @@ import (
 	"time"
 
 	mongo "github.com/SouthUral/service_sync_tables/database/mongodb"
+	pg "github.com/SouthUral/service_sync_tables/database/postgres"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -22,7 +23,7 @@ func SyncTables(data mongo.StateMess, inputChan chan string, outputChan chan syn
 	if err != nil {
 		log.Error(err)
 		test_answer := syncMessChan{
-			Info:   StartSync,
+			Info:   pg.StartSync,
 			Offset: data.Offset,
 			id:     fmt.Sprintf("%s_%s", data.DataBase, data.Table),
 			Error:  err.Error(),
@@ -34,7 +35,7 @@ func SyncTables(data mongo.StateMess, inputChan chan string, outputChan chan syn
 	// Отправка сообщения об успешном старте
 	// Такое сообщение не будет записываться в DB а сразу уйдет API
 	outputChan <- syncMessChan{
-		Info:   StartSync,
+		Info:   pg.StartSync,
 		Offset: data.Offset,
 		id:     fmt.Sprintf("%s_%s", data.DataBase, data.Table),
 		Error:  nil,
@@ -44,7 +45,7 @@ func SyncTables(data mongo.StateMess, inputChan chan string, outputChan chan syn
 
 		intOffset++
 		test_answer := syncMessChan{
-			Info:   RegularSync,
+			Info:   pg.RegularSync,
 			Offset: strconv.Itoa(intOffset),
 			id:     fmt.Sprintf("%s_%s", data.DataBase, data.Table),
 			Error:  nil,
@@ -57,7 +58,7 @@ func SyncTables(data mongo.StateMess, inputChan chan string, outputChan chan syn
 
 	// Отправляет сообщение об остановке синхронизации
 	outputChan <- syncMessChan{
-		Info:   StopSync,
+		Info:   pg.StopSync,
 		Offset: strconv.Itoa(intOffset),
 		id:     fmt.Sprintf("%s_%s", data.DataBase, data.Table),
 		Error:  nil,

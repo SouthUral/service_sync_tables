@@ -11,12 +11,12 @@ type StorageChanInput map[string]*CountChanUse
 type StateStorage map[string]StateSyncStorage
 
 // Структура для передачи сообщений из горутины с синхронизацией в горутину состояния.
-type syncMessChan struct {
-	Info   string
-	Offset string
-	Error  interface{}
-	id     string
-}
+// type syncMessChan struct {
+// 	Info   string
+// 	Offset string
+// 	Error  interface{}
+// 	id     string
+// }
 
 // Структура содержит количество ссылок на канал.
 // Используется для закрытия канала

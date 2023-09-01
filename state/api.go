@@ -5,6 +5,7 @@ import (
 
 	api "github.com/SouthUral/service_sync_tables/api"
 	mongo "github.com/SouthUral/service_sync_tables/database/mongodb"
+	pg "github.com/SouthUral/service_sync_tables/database/postgres"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -147,14 +148,14 @@ func (state *State) ResponseAPIRequest(key string, err interface{}, status strin
 	}
 
 	switch status {
-	case StartSync:
+	case pg.StartSync:
 		if err != nil {
 			apiMess.Info = "sync did not start due to an error"
 			apiMess.Err = err
 		} else {
 			apiMess.Info = "sync has started successfully"
 		}
-	case StopSync:
+	case pg.StopSync:
 		apiMess.Info = "sync has been stopped"
 	}
 

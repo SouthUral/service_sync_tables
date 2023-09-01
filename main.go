@@ -6,6 +6,7 @@ import (
 	Api "github.com/SouthUral/service_sync_tables/api"
 	Config "github.com/SouthUral/service_sync_tables/config"
 	Mongo "github.com/SouthUral/service_sync_tables/database/mongodb"
+	Postgres "github.com/SouthUral/service_sync_tables/database/postgres"
 	URLStorage "github.com/SouthUral/service_sync_tables/database/urlstorage"
 	_ "github.com/SouthUral/service_sync_tables/docs"
 	State "github.com/SouthUral/service_sync_tables/state"
@@ -28,6 +29,7 @@ func main() {
 		return
 	}
 
+	outgoingSyncCh, ingoingPgCh := Postgres.GenerateChan()
 	inputMDBchan := make(Mongo.MongoInputChan, 100)
 	inputUrlChan := make(URLStorage.InputUrlStorageAPIch, 100)
 	outputMDBchan := make(Mongo.MongoOutputChan, 100)
@@ -35,7 +37,8 @@ func main() {
 
 	Mongo.MDBInit(inputMDBchan, outputMDBchan)
 	Api.InitServer(outputApiChan, inputUrlChan)
-	State.InitState(inputMDBchan, outputMDBchan, outputApiChan)
+	State.InitState(inputMDBchan, outputMDBchan, outputApiChan, outgoingSyncCh, ingoingPgCh)
+	Postgres.InitPostgres(inputUrlChan, ingoingPgCh, outgoingSyncCh)
 
 	// инициализация модуля работы с URL
 	URLStorage.InitUrlStorage(inputUrlChan, confStruct)

@@ -6,6 +6,7 @@ import (
 
 	api "github.com/SouthUral/service_sync_tables/api"
 	mongo "github.com/SouthUral/service_sync_tables/database/mongodb"
+	pg "github.com/SouthUral/service_sync_tables/database/postgres"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -17,15 +18,16 @@ type State struct {
 	StorageChanI  StorageChanInput
 	mdbInput      mongo.MongoInputChan
 	mdbOutput     mongo.MongoOutputChan
-	syncOutput    chan syncMessChan
+	syncOutput    pg.OutgoingChanSync
 	outputApiChan api.OutputAPIChan
+	chanStartSync pg.IncomCh
 	// если нужно отправить StateStorage в целиком в другую горутину
 	// то нужно отправлять глубокую копию StateStorage иначе будет состояние гонки
 	stateStorage StateStorage
 }
 
 // создает структуру State и запускает горутину StateWorker
-func InitState(mdbInput mongo.MongoInputChan, mdbOutput mongo.MongoOutputChan, outputApiChan api.OutputAPIChan) {
+func InitState(mdbInput mongo.MongoInputChan, mdbOutput mongo.MongoOutputChan, outputApiChan api.OutputAPIChan, syncOutput pg.OutgoingChanSync, chanStartSync pg.IncomCh) {
 
 	w_state := State{
 		StorageChanI:  make(StorageChanInput),
@@ -33,6 +35,8 @@ func InitState(mdbInput mongo.MongoInputChan, mdbOutput mongo.MongoOutputChan, o
 		mdbOutput:     mdbOutput,
 		outputApiChan: outputApiChan,
 		stateStorage:  make(StateStorage),
+		syncOutput:    syncOutput,
+		chanStartSync: chanStartSync,
 	}
 	go w_state.StateWorker()
 }
@@ -42,7 +46,6 @@ func InitState(mdbInput mongo.MongoInputChan, mdbOutput mongo.MongoOutputChan, o
 // для обработки сообщений с каждым из модулей можно создать функции (3 функции)
 func (state *State) StateWorker() {
 	// метод для старта, запрашивает из монго все документы
-	state.syncOutput = make(chan syncMessChan, 100)
 	state.mdbInput <- mongo.MessCommand{Info: mongo.GetAll}
 
 	// запускается бесконечный цикл обработки сообщений
@@ -60,27 +63,27 @@ func (state *State) StateWorker() {
 }
 
 // обработчик для сообщений которые приходят из горутин
-func (state *State) HandlerSyncThreads(mess syncMessChan) {
+func (state *State) HandlerSyncThreads(mess pg.OutgoingMessSync) {
 	itemSync := state.stateStorage[mess.id]
 
 	// отправляет сообщение в API либо об успешном страте либо об ошибке
 	switch mess.Info {
-	case StartSync:
+	case pg.StartSync:
 		if mess.Error == nil {
-			state.ResponseAPIRequest(mess.id, nil, StartSync)
+			state.ResponseAPIRequest(mess.id, nil, pg.StartSync)
 		} else {
 			state.StopSyncState(mess.id, mess.Error, false)
-			state.ResponseAPIRequest(mess.id, mess.Error, StartSync)
+			state.ResponseAPIRequest(mess.id, mess.Error, pg.StartSync)
 		}
 		return
-	case RegularSync:
+	case pg.RegularSync:
 		itemSync.Offset = mess.Offset
 		itemSync.IsSave = false
 		state.stateStorage[mess.id] = itemSync
 		state.updateDataMongo(mess.id)
 		log.Debug("Данные из горутины отправлены на сохранение в MongoDB")
-	case StopSync:
-		state.ResponseAPIRequest(mess.id, nil, StopSync)
+	case pg.StopSync:
+		state.ResponseAPIRequest(mess.id, nil, pg.StopSync)
 	}
 
 }
