@@ -35,11 +35,10 @@ func ConcurentConnPg(dbURL string, ch ChConnMess) {
 	}
 }
 
-func StartConcurentConn(dbURL string) (*pgx.Conn, error) {
+func StartConcurentConn(dbURL string) ChConnMess {
 	ConnCh := make(ChConnMess)
 	go ConcurentConnPg(dbURL, ConnCh)
-	mess := <-ConnCh
-	return mess.Conn, mess.ErrConn
+	return ConnCh
 }
 
 type ConnectsPG struct {
@@ -49,29 +48,32 @@ type ConnectsPG struct {
 }
 
 func initConnPg(URLmainDB, URLsecondDb string) ConnectsPG {
-	mainConn, errMain := StartConcurentConn(URLmainDB)
-	secondConn, errSecond := StartConcurentConn(URLsecondDb)
+	ChMain := StartConcurentConn(URLmainDB)
+	ChSecond := StartConcurentConn(URLsecondDb)
 
-	var answer ConnectsPG
-	var errString string
-	if errMain != nil {
-		errString = fmt.Sprintf("Ошибка подключения к основной БД: %s.", errMain.Error())
+	errString := ""
+	answer := ConnectsPG{}
+
+	select {
+
+	case messMainConn := <-ChMain:
+		answer.MainConn = messMainConn.Conn
+		mainError := messMainConn.ErrConn
+		if mainError != nil {
+			errString = fmt.Sprintf("Ошибка подключения к основной БД: %s.\n%s", mainError.Error(), errString)
+		}
+	case messSecondConn := <-ChSecond:
+		answer.SecondConn = messSecondConn.Conn
+		secondError := messSecondConn.ErrConn
+		if secondError != nil {
+			errString = fmt.Sprintf("Ошибка подключения к БД: %s.\n%s", secondError.Error(), errString)
+		}
 	}
-	if errSecond != nil {
-		errString = fmt.Sprintf("Ошибка подключения к БД: %s.\n%s", errSecond.Error(), errString)
-	}
+
 	if errString != "" {
-		answer = ConnectsPG{
-			MainConn:   mainConn,
-			SecondConn: secondConn,
-			Error:      fmt.Errorf(errString),
-		}
+		answer.Error = fmt.Errorf(errString)
 	} else {
-		answer = ConnectsPG{
-			MainConn:   mainConn,
-			SecondConn: secondConn,
-			Error:      nil,
-		}
+		answer.Error = nil
 	}
 	return answer
 }
