@@ -1,6 +1,17 @@
 package postgres
 
-import "fmt"
+import (
+	"fmt"
+
+	pgx "github.com/jackc/pgx/v5"
+)
+
+// Структура для внутренней передачи коннектов к БД между функциями модуля Postgres
+type ConnectsPG struct {
+	MainConn   *pgx.Conn
+	SecondConn *pgx.Conn
+	Error      error
+}
 
 // Входящее сообщение
 type IncomingMess struct {

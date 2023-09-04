@@ -46,5 +46,12 @@ func (pg *postgresMain) mainStreamSync(mainUrl, secondUrl string, incomMess Inco
 	connects := initConnPg(mainUrl, secondUrl)
 	if connects.Error != nil {
 		sendErrorMess(incomMess, connects.Error, pg.outgoingChan, StartSync)
+		return
 	}
+	checkError := CheckingStrucTables(connects)
+	if checkError != nil {
+		sendErrorMess(incomMess, checkError, pg.outgoingChan, StartSync)
+		return
+	}
+
 }
