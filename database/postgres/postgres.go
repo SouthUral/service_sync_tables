@@ -1,25 +1,12 @@
 package postgres
 
 import (
-	"context"
 	"fmt"
 
 	url "github.com/SouthUral/service_sync_tables/database/urlstorage"
 
-	pgx "github.com/jackc/pgx/v5"
 	log "github.com/sirupsen/logrus"
 )
-
-// метод для подключения к БД
-func pgConnect(dbURL string) (*pgx.Conn, error) {
-	connect, err := pgx.Connect(context.Background(), dbURL)
-	if err != nil {
-		log.Error(fmt.Sprintf("Connect error: %s", dbURL))
-		return connect, err
-	}
-	log.Info(fmt.Sprintf("Connect is ready: %s", dbURL))
-	return connect, nil
-}
 
 // Структура для хранения каналов, которые переданы при инициализации в main
 type postgresMain struct {
@@ -48,13 +35,16 @@ func (pg *postgresMain) mainWorkPg() {
 		case mess := <-pg.pgInputch:
 			URLs := checkDBalias(mess, pg.mainDB, pg.urlIncomCh)
 			if URLs.err != nil {
-				// Отправить сообщение об ошибке в state
+				sendErrorMess(mess, URLs.err, pg.outgoingChan, StartSync)
 			}
-			go pg.mainStreamSync(URLs.urlMainDb, URLs.urlSecondDb)
+			go pg.mainStreamSync(URLs.urlMainDb, URLs.urlSecondDb, mess)
 		}
 	}
 }
 
-func (pg *postgresMain) mainStreamSync(mainUrl, secondUrl string) {
-
+func (pg *postgresMain) mainStreamSync(mainUrl, secondUrl string, incomMess IncomingMess) {
+	connects := initConnPg(mainUrl, secondUrl)
+	if connects.Error != nil {
+		sendErrorMess(incomMess, connects.Error, pg.outgoingChan, StartSync)
+	}
 }

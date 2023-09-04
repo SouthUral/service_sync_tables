@@ -64,26 +64,26 @@ func (state *State) StateWorker() {
 
 // обработчик для сообщений которые приходят из горутин
 func (state *State) HandlerSyncThreads(mess pg.OutgoingMessSync) {
-	itemSync := state.stateStorage[mess.id]
+	itemSync := state.stateStorage[mess.GetID()]
 
 	// отправляет сообщение в API либо об успешном страте либо об ошибке
 	switch mess.Info {
 	case pg.StartSync:
 		if mess.Error == nil {
-			state.ResponseAPIRequest(mess.id, nil, pg.StartSync)
+			state.ResponseAPIRequest(mess.GetID(), nil, pg.StartSync)
 		} else {
-			state.StopSyncState(mess.id, mess.Error, false)
-			state.ResponseAPIRequest(mess.id, mess.Error, pg.StartSync)
+			state.StopSyncState(mess.GetID(), mess.Error, false)
+			state.ResponseAPIRequest(mess.GetID(), mess.Error, pg.StartSync)
 		}
 		return
 	case pg.RegularSync:
 		itemSync.Offset = mess.Offset
 		itemSync.IsSave = false
-		state.stateStorage[mess.id] = itemSync
-		state.updateDataMongo(mess.id)
+		state.stateStorage[mess.GetID()] = itemSync
+		state.updateDataMongo(mess.GetID())
 		log.Debug("Данные из горутины отправлены на сохранение в MongoDB")
 	case pg.StopSync:
-		state.ResponseAPIRequest(mess.id, nil, pg.StopSync)
+		state.ResponseAPIRequest(mess.GetID(), nil, pg.StopSync)
 	}
 
 }

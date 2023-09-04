@@ -1,5 +1,7 @@
 package postgres
 
+import "fmt"
+
 // Входящее сообщение
 type IncomingMess struct {
 	Table      string
@@ -21,6 +23,10 @@ type OutgoingMessSync struct {
 	Error    error
 	Database string
 	Table    string
+}
+
+func (mess *OutgoingMessSync) GetID() string {
+	return fmt.Sprintf("%s_%s", mess.Database, mess.Table)
 }
 
 type URLsDB struct {

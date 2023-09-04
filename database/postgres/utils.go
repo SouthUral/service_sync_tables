@@ -31,3 +31,15 @@ func checkDBalias(mess IncomingMess, aliasMainDb string, urlCh url.InputUrlStora
 	}
 	return res
 }
+
+// Метод для отправки сообщения об ошибке в State
+func sendErrorMess(mess IncomingMess, err error, outgoingChan OutgoingChanSync, infoMess string) {
+	outgoingMess := OutgoingMessSync{
+		Info:     infoMess,
+		Error:    err,
+		Offset:   mess.Offset,
+		Database: mess.Database,
+		Table:    mess.Table,
+	}
+	outgoingChan <- outgoingMess
+}
