@@ -48,10 +48,13 @@ func (pg *postgresMain) mainStreamSync(mainUrl, secondUrl string, incomMess Inco
 		sendErrorMess(incomMess, connects.Error, pg.outgoingChan, StartSync)
 		return
 	}
-	checkError := CheckingStrucTables(connects)
+	resComparison, checkError := CheckingStrucTables(connects, incomMess)
 	if checkError != nil {
 		sendErrorMess(incomMess, checkError, pg.outgoingChan, StartSync)
 		return
+	} else if !resComparison {
+		comparisonError := fmt.Errorf("Таблицы %s в mainDB и в %s не совпадают", incomMess.Table, incomMess.Database)
+		sendErrorMess(incomMess, comparisonError, pg.outgoingChan, StartSync)
 	}
 
 }
