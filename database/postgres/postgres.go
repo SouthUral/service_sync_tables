@@ -42,6 +42,7 @@ func (pg *postgresMain) mainWorkPg() {
 	}
 }
 
+// Поток с проверкой и синхронизацией таблиц
 func (pg *postgresMain) mainStreamSync(mainUrl, secondUrl string, incomMess IncomingMess) {
 	connects := initConnPg(mainUrl, secondUrl)
 	if connects.Error != nil {
@@ -55,6 +56,7 @@ func (pg *postgresMain) mainStreamSync(mainUrl, secondUrl string, incomMess Inco
 	} else if !resComparison {
 		comparisonError := fmt.Errorf("Таблицы %s в mainDB и в %s не совпадают", incomMess.Table, incomMess.Database)
 		sendErrorMess(incomMess, comparisonError, pg.outgoingChan, StartSync)
+		return
 	}
 
 }
