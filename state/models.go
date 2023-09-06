@@ -29,6 +29,7 @@ type CountChanUse struct {
 type StateSyncStorage struct {
 	Id        string      `json:"id"`
 	Table     string      `json:"table"`
+	Schema    string      `json:"schema"`
 	DataBase  string      `json:"data_base"`
 	Offset    interface{} `json:"offset"`
 	Err       interface{} `json:"error"`

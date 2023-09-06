@@ -144,6 +144,7 @@ func (mdb *MongoBase) updateData(data StateMess, collection *mongo.Collection) i
 		"$set": bson.M{
 			"id":       data.Oid,
 			"table":    data.Table,
+			"schema":   data.Schema,
 			"database": data.DataBase,
 			"offset":   data.Offset,
 			"isactive": data.IsActive,
@@ -189,6 +190,7 @@ func (mdb *MongoBase) inputData(data StateMess, colection *mongo.Collection) (in
 	DbObject = StateMess{
 		Oid:      id,
 		Table:    data.Table,
+		Schema:   data.Schema,
 		DataBase: data.DataBase,
 		Offset:   data.Offset,
 		IsActive: data.IsActive,

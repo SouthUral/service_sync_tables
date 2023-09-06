@@ -4,6 +4,7 @@ package mongodb
 type StateMess struct {
 	Oid      string
 	Table    string
+	Schema   string
 	DataBase string
 	Offset   string
 	IsActive bool

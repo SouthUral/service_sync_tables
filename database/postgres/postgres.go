@@ -16,6 +16,7 @@ type postgresMain struct {
 	mainDB       string                   // alias БД из которой будет производится выгрузка
 }
 
+// Функция инициализации модуля Postgres, создает и заполняет структуру postgresMain, запускает центральный поток модуля
 func InitPostgres(urlIncomCh url.InputUrlStorageAPIch, pgInputch IncomCh, pgOutGoingCh OutgoingChanSync) {
 	pg := postgresMain{
 		outgoingChan: pgOutGoingCh,

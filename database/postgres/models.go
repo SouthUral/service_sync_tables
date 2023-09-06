@@ -16,6 +16,7 @@ type ConnectsPG struct {
 // Входящее сообщение
 type IncomingMess struct {
 	Table      string
+	Schema     string
 	Database   string
 	Offset     string
 	ChCommSync CommToSync
@@ -33,6 +34,7 @@ type OutgoingMessSync struct {
 	Offset   string
 	Error    error
 	Database string
+	Schema   string
 	Table    string
 }
 

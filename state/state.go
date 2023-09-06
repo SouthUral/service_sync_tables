@@ -114,6 +114,7 @@ func (state *State) AddInfoToStorage(data mongo.StateMess) {
 	state.stateStorage[key] = StateSyncStorage{
 		Id:        data.Oid,
 		Table:     data.Table,
+		Schema:    data.Schema,
 		DataBase:  data.DataBase,
 		Offset:    data.Offset,
 		Err:       nil,

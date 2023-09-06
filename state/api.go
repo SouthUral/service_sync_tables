@@ -33,6 +33,7 @@ func (state *State) ApiHandler(mess api.APImessage) {
 			Info: mongo.InputData,
 			Data: mongo.StateMess{
 				Table:    mess.Data.Table,
+				Schema:   mess.Data.Schema,
 				DataBase: mess.Data.DataBase,
 				Offset:   mess.Data.Offset,
 				IsActive: mess.Data.IsActive,

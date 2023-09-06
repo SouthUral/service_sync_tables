@@ -16,6 +16,7 @@ type StateAnswer struct {
 // Структура для получения и расшифровки данных от клиента
 type InputDataApi struct {
 	Table    string `json:"table"`
+	Schema   string `json:"schema"`
 	DataBase string `json:"data_base"`
 	IsActive bool   `json:"is_active"`
 	Offset   string `json:"offset"`
