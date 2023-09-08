@@ -1,6 +1,10 @@
 package postgres
 
 import (
+	"context"
+	"fmt"
+	"strconv"
+
 	pgx "github.com/jackc/pgx/v5"
 )
 
@@ -12,9 +16,18 @@ func sync(connects ConnectsPG, mess IncomingMess, chankRead, chankWrite string, 
 
 }
 
-// Канал для передачи горутине обработки данных
+// Канал для возвращения оффсета горутине чтения из горутины обработки
+type offsetReturnsCh chan string
+
+// Канал для передачи горутине обработки данных.
 // Канал нужно передать горутине чтения и горутине обработки
-type incomTransmissinCh chan pgx.Rows
+type incomTransmissinCh chan MessForProcessingData
+
+// Сообщение для горутины обработки данных от горутины чтения
+type MessForProcessingData struct {
+	Rows     pgx.Rows
+	MessInfo string
+}
 
 // Канал для передачи данных от горутины обработки для горутины записи.
 // Канал нужно передать горутине обработки и горутине записи.
@@ -30,10 +43,10 @@ type dataForRecording struct {
 type controlGorutinCh chan string
 
 // Канал для сообщений из горутин (записи, обработки, чтения) в центральный поток синхронизации.
-type responseCh chan responseGotutine
+type responseCh chan responseMessGorutine
 
 // Структура сообщения из горутин (записи, обработки, чтения) в центральный поток синхронизации.
-type responseGotutine struct {
+type responseMessGorutine struct {
 	InfoGorutine string // информация от какой горутины пришло сообщение ();
 	ErrorMess    error  // Ошибка, которую возвращает горутина;
 	Offset       string // Offset возвращает только горутина записи;
@@ -52,6 +65,7 @@ func startFuncsSync(mess IncomingMess, connects ConnectsPG, chankRead string) co
 	transmissionChForProcessing := make(incomTransmissinCh)
 	transmissionChForWriting := make(outgoingTransmissCh)
 	responseChGorutines := make(responseCh, 100)
+	offsetCh := make(offsetReturnsCh)
 
 	answer := controlsChGorutines{}
 
@@ -63,11 +77,13 @@ func startFuncsSync(mess IncomingMess, connects ConnectsPG, chankRead string) co
 	go readData(
 		transmissionChForProcessing,
 		responseChGorutines,
+		offsetCh,
 		connects.MainConn,
 		mess.Table,
 		mess.Schema,
 		mess.Offset,
 		chankRead,
+
 		answer.chReadData,
 	)
 
@@ -90,9 +106,76 @@ func startFuncsSync(mess IncomingMess, connects ConnectsPG, chankRead string) co
 	return answer
 }
 
-// Горутина чтения данных из БД1
-func readData(chToProcessing incomTransmissinCh, responseCh responseCh, conn *pgx.Conn, table, schema, offset, chunk string, contolCh controlGorutinCh) {
+// Функция для отправки сообщения ошибки в центральную горутину синхронизации
+func sendErrorSync(Info string, ErrorSync error, responseCh responseCh) {
+	responseCh <- responseMessGorutine{
+		InfoGorutine: Info,
+		ErrorMess:    ErrorSync,
+	}
+}
 
+// Функция запроса к БД оффсету
+func doQuery(chToProcessing incomTransmissinCh, responseCh responseCh, conn *pgx.Conn, table, schema, offset, chunk string) error {
+	switch offset {
+	case First:
+		query := fmt.Sprintf("SELECT * FROM %s.%s ORDER BY id limit $1::int;", schema, table)
+		rows, err := conn.Query(context.Background(), query, chunk)
+		if err != nil {
+			sendErrorSync(GorReadData, err, responseCh)
+			return err
+		}
+		chToProcessing <- MessForProcessingData{
+			Rows: rows,
+		}
+	case Last:
+		query := fmt.Sprintf("SELECT * FROM %s.%s ORDER BY id DESC limit 1;", schema, table)
+		rows, err := conn.Query(context.Background(), query)
+		if err != nil {
+			sendErrorSync(GorReadData, err, responseCh)
+			return err
+		}
+		chToProcessing <- MessForProcessingData{
+			Rows:     rows,
+			MessInfo: Last,
+		}
+	default:
+		_, err := strconv.Atoi(offset)
+		if err != nil {
+			sendErrorSync(GorReadData, err, responseCh)
+			return err
+		}
+		query := fmt.Sprintf("SELECT * FROM %s.%s WHERE id > $1::int ORDER BY id limit $2::int;", schema, table)
+		rows, err := conn.Query(context.Background(), query, offset, chunk)
+		if err != nil {
+			sendErrorSync(GorReadData, err, responseCh)
+			return err
+		}
+		chToProcessing <- MessForProcessingData{
+			Rows: rows,
+		}
+	}
+	return nil
+}
+
+// Горутина чтения данных из БД1
+func readData(chToProcessing incomTransmissinCh, responseCh responseCh, offsetCh offsetReturnsCh, conn *pgx.Conn, table, schema, offset, chunk string, contolCh controlGorutinCh) {
+
+	err := doQuery(chToProcessing, responseCh, conn, table, schema, offset, chunk)
+	if err != nil {
+		return
+	}
+
+	for {
+		select {
+		case _ = <-contolCh:
+			return
+		case messOffset := <-offsetCh:
+			err := doQuery(chToProcessing, responseCh, conn, table, schema, messOffset, chunk)
+			if err != nil {
+				return
+			}
+		}
+	}
 }
 
 // Горутина записи данных в БД2
