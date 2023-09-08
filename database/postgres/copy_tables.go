@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	pgx "github.com/jackc/pgx/v5"
 )
@@ -160,7 +161,17 @@ func doQuery(chToProcessing incomTransmissinCh, responseCh responseCh, conn *pgx
 // Горутина чтения данных из БД1
 func readData(chToProcessing incomTransmissinCh, responseCh responseCh, offsetCh offsetReturnsCh, conn *pgx.Conn, table, schema, offset, chunk string, contolCh controlGorutinCh) {
 
-	err := doQuery(chToProcessing, responseCh, conn, table, schema, offset, chunk)
+	oldOffset := offset
+	waitingTime := 0
+
+	err := doQuery(
+		chToProcessing,
+		responseCh,
+		conn,
+		table,
+		schema,
+		offset,
+		chunk)
 	if err != nil {
 		return
 	}
@@ -170,7 +181,21 @@ func readData(chToProcessing incomTransmissinCh, responseCh responseCh, offsetCh
 		case _ = <-contolCh:
 			return
 		case messOffset := <-offsetCh:
-			err := doQuery(chToProcessing, responseCh, conn, table, schema, messOffset, chunk)
+			if oldOffset == messOffset && waitingTime <= 10 {
+				waitingTime++
+				time.Sleep(time.Duration(waitingTime) * time.Second)
+			} else {
+				oldOffset = messOffset
+				waitingTime = 0
+			}
+			err := doQuery(
+				chToProcessing,
+				responseCh,
+				conn,
+				table,
+				schema,
+				messOffset,
+				chunk)
 			if err != nil {
 				return
 			}
