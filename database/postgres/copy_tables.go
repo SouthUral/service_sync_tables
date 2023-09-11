@@ -209,9 +209,24 @@ func readData(chToProcessing incomTransmissinCh, responseCh responseCh, offsetCh
 	}
 }
 
-// Горутина записи данных в БД2
+// Горутина записи данных в БД2.
+// Горутина должна быть блокируемая, т.е. запись в БД должна происходить только после команды Continue из канала contolCh
 func writeData(chIncomData outgoingTransmissCh, responseCh responseCh, conn *pgx.Conn, table, schema string, contolCh controlGorutinCh) {
+	control := Continue
+	select {
+	case messControl := <-contolCh:
+		switch messControl {
+		case Stop:
+			log.Debug("Работа горутины записи завершена по команде")
+			return
+		case Continue:
+			control = messControl
+		}
+	case messData := <-chIncomData:
+		if control == Continue {
 
+		}
+	}
 }
 
 // Горутина обработки данных для их последующей записи
