@@ -7,6 +7,7 @@ import (
 	"time"
 
 	pgx "github.com/jackc/pgx/v5"
+	log "github.com/sirupsen/logrus"
 )
 
 // Функция для запуска и контроля синхронизаций.
@@ -36,8 +37,9 @@ type outgoingTransmissCh chan dataForRecording
 
 // Структура для передачи данных от горутины обработки для горутины записи
 type dataForRecording struct {
-	Fields []string
-	Data   [][]any
+	Fields     []string
+	Data       [][]any
+	LastOffset string
 }
 
 // Канал для управления горутинами
@@ -102,6 +104,7 @@ func startFuncsSync(mess IncomingMess, connects ConnectsPG, chankRead string) co
 		transmissionChForWriting,
 		responseChGorutines,
 		answer.chProcessingData,
+		offsetCh,
 	)
 
 	return answer
@@ -173,12 +176,14 @@ func readData(chToProcessing incomTransmissinCh, responseCh responseCh, offsetCh
 		offset,
 		chunk)
 	if err != nil {
+		log.Debug("Работа горутины чтения завершена из-за ошибки")
 		return
 	}
 
 	for {
 		select {
 		case _ = <-contolCh:
+			log.Debug("Работа горутины чтения завершена по команде")
 			return
 		case messOffset := <-offsetCh:
 			if oldOffset == messOffset && waitingTime <= 10 {
@@ -197,6 +202,7 @@ func readData(chToProcessing incomTransmissinCh, responseCh responseCh, offsetCh
 				messOffset,
 				chunk)
 			if err != nil {
+				log.Debug("Работа горутины чтения завершена из-за ошибки")
 				return
 			}
 		}
@@ -209,6 +215,104 @@ func writeData(chIncomData outgoingTransmissCh, responseCh responseCh, conn *pgx
 }
 
 // Горутина обработки данных для их последующей записи
-func processingData(chIncomData incomTransmissinCh, chOutgoinData outgoingTransmissCh, responseCh responseCh, contolCh controlGorutinCh) {
+func processingData(chIncomData incomTransmissinCh, chOutgoinData outgoingTransmissCh, responseCh responseCh, contolCh controlGorutinCh, offsetCh offsetReturnsCh) {
+	oldOffset := ""
 
+	for {
+		select {
+		case messData := <-chIncomData:
+			switch messData.MessInfo {
+			case Last:
+				// выдление оффсета и отправка в модуль чтения
+				rows, err := rowsToMap(messData.Rows)
+				if err != nil {
+					sendErrorSync("processingData", err, responseCh)
+					log.Debug("Работа горутины обработки завершена из-за ошибки")
+					return
+				}
+				if len(rows) == 0 {
+					offsetCh <- Last
+					continue
+				} else {
+					lastOffset := getLastOffset(rows)
+					offsetCh <- lastOffset
+				}
+			default:
+				// обработанные данные отправить в модуль записи вместе с оффсетом
+				// оффсет отправить в модуль чтения
+				rows, err := rowsToMap(messData.Rows)
+				if err != nil {
+					sendErrorSync("processingData", err, responseCh)
+					log.Debug("Работа горутины обработки завершена из-за ошибки")
+					return
+				}
+				// Если новых записей не было, то горутине чтения отправяляется прошлый оффсет
+				if len(rows) == 0 {
+					offsetCh <- oldOffset
+					continue
+				} else {
+					oldOffset = getLastOffset(rows)
+					offsetCh <- oldOffset
+					fields := getFiled(rows)
+					resRows := dictionaryConverter(rows, fields)
+					chOutgoinData <- dataForRecording{
+						Fields:     fields,
+						Data:       resRows,
+						LastOffset: oldOffset,
+					}
+				}
+			}
+		case _ = <-contolCh:
+			// при получении сообщения из управляющего канала завершить горутину
+			log.Debug("Работа горутины обработки завершена по команде")
+			return
+		}
+	}
+}
+
+// Словарь с данными сконвертированными из pgx.Rows
+type rowTable map[string]any
+
+// Функция читает данные из rows, конвертирует их в map и записывает в слайс
+func rowsToMap(rows pgx.Rows) ([]rowTable, error) {
+	res := make([]rowTable, 0)
+	for rows.Next() {
+		mapRes, err := pgx.RowToMap(rows)
+		if err != nil {
+			// Нужно отправить ошибку вверх по стеку вызовов
+			log.Error(err.Error())
+			return res, err
+		}
+		res = append(res, mapRes)
+	}
+	return res, nil
+}
+
+// Функция получает []rowTable и возвращает последний оффсет в формате строки
+func getLastOffset(rows []rowTable) string {
+	lastId := len(rows) - 1
+	lastItem := rows[lastId]
+	return fmt.Sprintf("%d", lastItem["id"])
+}
+
+// Функция генерирует слайс с именами полей, слайс с полями необходим для записи данных в таблицу
+func getFiled(data []rowTable) []string {
+	resSlice := []string{}
+	for key := range data[0] {
+		resSlice = append(resSlice, key)
+	}
+	return resSlice
+}
+
+// Функция генерирует слайс слайсов из []rowTable, который необходим для записи в таблицу
+func dictionaryConverter(data []rowTable, sliceField []string) [][]any {
+	res := make([][]any, 0)
+	for _, row := range data {
+		rowSlice := make([]any, 0)
+		for _, key := range sliceField {
+			rowSlice = append(rowSlice, row[key])
+		}
+		res = append(res, rowSlice)
+	}
+	return res
 }
