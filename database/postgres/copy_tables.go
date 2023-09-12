@@ -213,20 +213,66 @@ func readData(chToProcessing incomTransmissinCh, responseCh responseCh, offsetCh
 // Горутина должна быть блокируемая, т.е. запись в БД должна происходить только после команды Continue из канала contolCh
 func writeData(chIncomData outgoingTransmissCh, responseCh responseCh, conn *pgx.Conn, table, schema string, contolCh controlGorutinCh) {
 	control := Continue
-	select {
-	case messControl := <-contolCh:
-		switch messControl {
-		case Stop:
-			log.Debug("Работа горутины записи завершена по команде")
-			return
-		case Continue:
-			control = messControl
-		}
-	case messData := <-chIncomData:
-		if control == Continue {
-
+	for {
+		select {
+		case messControl := <-contolCh:
+			switch messControl {
+			case Stop:
+				log.Debug("Работа горутины записи завершена по команде")
+				return
+			case Continue:
+				control = Continue
+			}
+		case messData := <-chIncomData:
+			if control == Continue {
+				err := writer(messData, conn, table, schema)
+				if err != nil {
+					sendErrorSync(GorWriteData, err, responseCh)
+					log.Debug("Работа горутины записи завершена из-за ошибки")
+					return
+				}
+				responseCh <- responseMessGorutine{
+					InfoGorutine: GorWriteData,
+					Offset:       messData.LastOffset,
+				}
+				control = Waiting
+			} else {
+				// Момент, когда сообщение с новыми данными пришло, но ответа от центрального потока еще нет
+				messControl := <-contolCh
+				switch messControl {
+				case Stop:
+					log.Debug("Работа горутины записи завершена по команде")
+					return
+				case Continue:
+					err := writer(messData, conn, table, schema)
+					if err != nil {
+						sendErrorSync(GorWriteData, err, responseCh)
+						log.Debug("Работа горутины записи завершена из-за ошибки")
+						return
+					}
+					responseCh <- responseMessGorutine{
+						InfoGorutine: GorWriteData,
+						Offset:       messData.LastOffset,
+					}
+				}
+			}
 		}
 	}
+}
+
+// Функция записи данных в таблицу
+func writer(mess dataForRecording, conn *pgx.Conn, table, schema string) error {
+	_, err := conn.CopyFrom(
+		context.Background(),
+		pgx.Identifier{schema, table},
+		mess.Fields,
+		pgx.CopyFromRows(mess.Data),
+	)
+	if err != nil {
+		log.Error("Ошибка записи в БД", err.Error())
+		return err
+	}
+	return nil
 }
 
 // Горутина обработки данных для их последующей записи

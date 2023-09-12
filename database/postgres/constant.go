@@ -2,6 +2,8 @@ package postgres
 
 const (
 	GorReadData      = "GorReadData"
+	GorWriteData     = "GorWriteData"
+	Waiting          = "Waiting"
 	First            = "first"
 	Last             = "last"
 	Stop             = "stop"
