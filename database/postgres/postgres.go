@@ -59,5 +59,8 @@ func (pg *postgresMain) mainStreamSync(mainUrl, secondUrl string, incomMess Inco
 		sendErrorMess(incomMess, comparisonError, pg.outgoingChan, StartSync)
 		return
 	}
-
+	// запуск цикла синхронизации
+	shunkTest := "10000"
+	sync(connects, incomMess, shunkTest, pg.outgoingChan)
+	return
 }

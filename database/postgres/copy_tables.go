@@ -14,8 +14,34 @@ import (
 // Принимает на вход структуру с коннекторами к базам, сообщение IncomingMess,
 // chankRead - нужен для определения размера чанка чтения,
 // chankWrite - нужен для определения размера чанка записи.
-func sync(connects ConnectsPG, mess IncomingMess, chankRead, chankWrite string, OutgoingChan OutgoingChanSync) {
+func sync(connects ConnectsPG, mess IncomingMess, chankRead string, OutgoingChan OutgoingChanSync) {
+	controlsChunsGor := startFuncsSync(mess, connects, chankRead)
+	for {
+		select {
+		case messGorAnswer := <-controlsChunsGor.chResponseGor:
+			// обработка сообщений от горутин
+			if messGorAnswer.ErrorMess != nil {
+				sendErrorMess(mess, messGorAnswer.ErrorMess, OutgoingChan, RegularSync)
+				// Отправить во все горутины команду стоп
 
+				return
+			}
+			switch messGorAnswer.InfoGorutine {
+			case GorWriteData:
+				// Отправить сообщение в канал OutgoingChan
+			}
+		case messState := <-mess.ChCommSync:
+			// Обработка сообщений от State
+			switch messState {
+			case Stop:
+				// Отправить во все горутины команду стоп
+
+				return
+			default:
+				// Отправить в горутину записи команду Continue
+			}
+		}
+	}
 }
 
 // Канал для возвращения оффсета горутине чтения из горутины обработки
@@ -60,15 +86,16 @@ type controlsChGorutines struct {
 	chReadData       controlGorutinCh
 	chWriteData      controlGorutinCh
 	chProcessingData controlGorutinCh
+	chResponseGor    responseCh
 }
 
 // Функция для старта горутин синхронизации (горутины: readData, writeData, processingData)
 func startFuncsSync(mess IncomingMess, connects ConnectsPG, chankRead string) controlsChGorutines {
 	// каналы для общения между горутинами синхронизации
-	transmissionChForProcessing := make(incomTransmissinCh)
-	transmissionChForWriting := make(outgoingTransmissCh)
+	transmissionChForProcessing := make(incomTransmissinCh, 5)
+	transmissionChForWriting := make(outgoingTransmissCh, 5)
 	responseChGorutines := make(responseCh, 100)
-	offsetCh := make(offsetReturnsCh)
+	offsetCh := make(offsetReturnsCh, 100)
 
 	answer := controlsChGorutines{}
 
@@ -76,6 +103,7 @@ func startFuncsSync(mess IncomingMess, connects ConnectsPG, chankRead string) co
 	answer.chWriteData = make(controlGorutinCh)
 	answer.chReadData = make(controlGorutinCh)
 	answer.chProcessingData = make(controlGorutinCh)
+	answer.chResponseGor = responseChGorutines
 
 	go readData(
 		transmissionChForProcessing,
@@ -164,6 +192,9 @@ func doQuery(chToProcessing incomTransmissinCh, responseCh responseCh, conn *pgx
 // Горутина чтения данных из БД1
 func readData(chToProcessing incomTransmissinCh, responseCh responseCh, offsetCh offsetReturnsCh, conn *pgx.Conn, table, schema, offset, chunk string, contolCh controlGorutinCh) {
 
+	// Коннект к БД должен закрыться
+	defer closeConn(conn)
+
 	oldOffset := offset
 	waitingTime := 0
 
@@ -212,6 +243,9 @@ func readData(chToProcessing incomTransmissinCh, responseCh responseCh, offsetCh
 // Горутина записи данных в БД2.
 // Горутина должна быть блокируемая, т.е. запись в БД должна происходить только после команды Continue из канала contolCh
 func writeData(chIncomData outgoingTransmissCh, responseCh responseCh, conn *pgx.Conn, table, schema string, contolCh controlGorutinCh) {
+
+	defer closeConn(conn)
+
 	control := Continue
 	for {
 		select {

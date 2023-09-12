@@ -1,9 +1,11 @@
 package postgres
 
 import (
+	"context"
 	"fmt"
 
 	url "github.com/SouthUral/service_sync_tables/database/urlstorage"
+	pgx "github.com/jackc/pgx/v5"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -42,4 +44,12 @@ func sendErrorMess(mess IncomingMess, err error, outgoingChan OutgoingChanSync, 
 		Table:    mess.Table,
 	}
 	outgoingChan <- outgoingMess
+}
+
+// Функция для закрытия коннекта к БД
+func closeConn(conn *pgx.Conn) {
+	err := conn.Close(context.Background())
+	if err != nil {
+		log.Warning("Коннект к БД уже был закрыт")
+	}
 }
