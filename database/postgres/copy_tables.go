@@ -22,26 +22,40 @@ func sync(connects ConnectsPG, mess IncomingMess, chankRead string, OutgoingChan
 			// обработка сообщений от горутин
 			if messGorAnswer.ErrorMess != nil {
 				sendErrorMess(mess, messGorAnswer.ErrorMess, OutgoingChan, RegularSync)
-				// Отправить во все горутины команду стоп
-
+				go stopSyncGor(controlsChunsGor)
 				return
 			}
 			switch messGorAnswer.InfoGorutine {
 			case GorWriteData:
 				// Отправить сообщение в канал OutgoingChan
+				OutgoingChan <- OutgoingMessSync{
+					Info:     RegularSync,
+					Offset:   messGorAnswer.Offset,
+					Database: mess.Database,
+					Schema:   mess.Schema,
+					Table:    mess.Table,
+				}
 			}
 		case messState := <-mess.ChCommSync:
 			// Обработка сообщений от State
 			switch messState {
 			case Stop:
-				// Отправить во все горутины команду стоп
-
+				go stopSyncGor(controlsChunsGor)
 				return
 			default:
 				// Отправить в горутину записи команду Continue
+				controlsChunsGor.chWriteData <- Continue
 			}
 		}
 	}
+}
+
+// Функция для остановки горутин
+func stopSyncGor(chGor controlsChGorutines) {
+	chGor.chProcessingData <- Stop
+	chGor.chReadData <- Stop
+	chGor.chWriteData <- Stop
+	log.Debug("Горутины синхронизации остановлены")
 }
 
 // Канал для возвращения оффсета горутине чтения из горутины обработки
