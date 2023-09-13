@@ -15,6 +15,11 @@ func pgConnect(dbURL string) (*pgx.Conn, error) {
 		log.Error(fmt.Sprintf("Connect error: %s", dbURL))
 		return connect, err
 	}
+	if connect == nil {
+		err := fmt.Errorf(fmt.Sprintf("Connect error: %s", dbURL))
+		log.Error(err)
+		return connect, err
+	}
 	log.Info(fmt.Sprintf("Connect is ready: %s", dbURL))
 	return connect, nil
 }
@@ -47,20 +52,34 @@ func initConnPg(URLmainDB, URLsecondDb string) ConnectsPG {
 
 	errString := ""
 	answer := ConnectsPG{}
+	checkAnswer := 0
+	for checkAnswer < 2 {
+		select {
 
-	select {
-
-	case messMainConn := <-ChMain:
-		answer.MainConn = messMainConn.Conn
-		mainError := messMainConn.ErrConn
-		if mainError != nil {
-			errString = fmt.Sprintf("Ошибка подключения к основной БД: %s.\n%s", mainError.Error(), errString)
-		}
-	case messSecondConn := <-ChSecond:
-		answer.SecondConn = messSecondConn.Conn
-		secondError := messSecondConn.ErrConn
-		if secondError != nil {
-			errString = fmt.Sprintf("Ошибка подключения к БД: %s.\n%s", secondError.Error(), errString)
+		case messMainConn := <-ChMain:
+			errPing := messMainConn.Conn.Ping(context.Background())
+			if errPing != nil {
+				log.Error(errPing)
+			}
+			answer.MainConn = messMainConn.Conn
+			mainError := messMainConn.ErrConn
+			if mainError != nil {
+				errString = fmt.Sprintf("Ошибка подключения к основной БД: %s.\n%s", mainError.Error(), errString)
+			}
+			checkAnswer++
+		case messSecondConn := <-ChSecond:
+			errPing := messSecondConn.Conn.Ping(context.Background())
+			if errPing != nil {
+				log.Error(errPing)
+			}
+			answer.SecondConn = messSecondConn.Conn
+			secondError := messSecondConn.ErrConn
+			if secondError != nil {
+				errString = fmt.Sprintf("Ошибка подключения к БД: %s.\n%s", secondError.Error(), errString)
+			}
+			checkAnswer++
+		default:
+			continue
 		}
 	}
 

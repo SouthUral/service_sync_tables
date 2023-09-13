@@ -38,5 +38,25 @@
       "user": "12313131",
       "password": "1231313"
     }
+  },
+  {
+    "db_alias": "main_db",
+    "conn_data": {
+      "host": "localhost",
+      "port": "5432",
+      "bd_name": "poly_bgp",
+      "user": "kovalenko",
+      "password": "7500"
+    }
+  },
+  {
+    "db_alias": "test_base_1",
+    "conn_data": {
+      "host": "localhost",
+      "port": "5471",
+      "bd_name": "poly_bgp",
+      "user": "kovalenko",
+      "password": "7500"
+    }
   }
 ]

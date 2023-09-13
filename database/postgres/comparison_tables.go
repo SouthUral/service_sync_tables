@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	pgx "github.com/jackc/pgx/v5"
+	log "github.com/sirupsen/logrus"
 )
 
 func CheckingStrucTables(connects ConnectsPG, mess IncomingMess) (bool, error) {
@@ -65,6 +66,10 @@ type StructsTablesDb struct {
 
 func StartGettingStructure(conn *pgx.Conn, mess IncomingMess) ChanTabsStruct {
 	ch := make(ChanTabsStruct)
+	err := conn.Ping(context.Background())
+	if err != nil {
+		log.Error(conn.Ping(context.Background()))
+	}
 	go RequestStructTable(conn, ch, mess.Table)
 	return ch
 }
