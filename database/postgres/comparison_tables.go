@@ -14,21 +14,28 @@ func CheckingStrucTables(connects ConnectsPG, mess IncomingMess) (bool, error) {
 
 	structsTables := StructsTablesDb{}
 	var errorMess string
+	checkAnswer := 0
 
-	select {
+	for checkAnswer < 2 {
+		select {
 
-	case messMainAnswer := <-chMainDb:
-		if messMainAnswer.errorAnswer != nil {
-			errorMess = fmt.Sprintf("Ошибка чтения структуры таблицы в mainDB: %s.\n%s", messMainAnswer.errorAnswer.Error(), errorMess)
+		case messMainAnswer := <-chMainDb:
+			if messMainAnswer.errorAnswer != nil {
+				errorMess = fmt.Sprintf("Ошибка чтения структуры таблицы в mainDB: %s.\n%s", messMainAnswer.errorAnswer.Error(), errorMess)
+			}
+			structsTables.mainStructTable = messMainAnswer.answer
+			checkAnswer++
+		case messSecondAnswer := <-chSeconDb:
+			if messSecondAnswer.errorAnswer != nil {
+				errorMess = fmt.Sprintf("Ошибка чтения структуры таблицы в secondDB: %s.\n%s", messSecondAnswer.errorAnswer.Error(), errorMess)
+			}
+			structsTables.secondStructTable = messSecondAnswer.answer
+			checkAnswer++
+		default:
+			continue
 		}
-		structsTables.mainStructTable = messMainAnswer.answer
-
-	case messSecondAnswer := <-chSeconDb:
-		if messSecondAnswer.errorAnswer != nil {
-			errorMess = fmt.Sprintf("Ошибка чтения структуры таблицы в secondDB: %s.\n%s", messSecondAnswer.errorAnswer.Error(), errorMess)
-		}
-		structsTables.secondStructTable = messSecondAnswer.answer
 	}
+
 	if errorMess != "" {
 		err := fmt.Errorf(errorMess)
 		return false, err

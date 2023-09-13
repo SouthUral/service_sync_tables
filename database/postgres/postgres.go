@@ -53,13 +53,16 @@ func (pg *postgresMain) mainStreamSync(mainUrl, secondUrl string, incomMess Inco
 	resComparison, checkError := CheckingStrucTables(connects, incomMess)
 	if checkError != nil {
 		sendErrorMess(incomMess, checkError, pg.outgoingChan, StartSync)
+		log.Error(checkError)
 		return
 	} else if !resComparison {
 		comparisonError := fmt.Errorf("Таблицы %s в mainDB и в %s не совпадают", incomMess.Table, incomMess.Database)
+		log.Error(comparisonError)
 		sendErrorMess(incomMess, comparisonError, pg.outgoingChan, StartSync)
 		return
 	}
 	// запуск цикла синхронизации
+	log.Info("Запуск синхронизации")
 	shunkTest := "10000"
 	sync(connects, incomMess, shunkTest, pg.outgoingChan)
 	return

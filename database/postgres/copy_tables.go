@@ -21,6 +21,7 @@ func sync(connects ConnectsPG, mess IncomingMess, chankRead string, OutgoingChan
 		case messGorAnswer := <-controlsChunsGor.chResponseGor:
 			// обработка сообщений от горутин
 			if messGorAnswer.ErrorMess != nil {
+				log.Error(messGorAnswer.ErrorMess)
 				sendErrorMess(mess, messGorAnswer.ErrorMess, OutgoingChan, RegularSync)
 				go stopSyncGor(controlsChunsGor)
 				return
@@ -67,8 +68,9 @@ type incomTransmissinCh chan MessForProcessingData
 
 // Сообщение для горутины обработки данных от горутины чтения
 type MessForProcessingData struct {
-	Rows     pgx.Rows
-	MessInfo string
+	OldOffset string
+	Rows      pgx.Rows
+	MessInfo  string
 }
 
 // Канал для передачи данных от горутины обработки для горутины записи.
@@ -197,7 +199,8 @@ func doQuery(chToProcessing incomTransmissinCh, responseCh responseCh, conn *pgx
 			return err
 		}
 		chToProcessing <- MessForProcessingData{
-			Rows: rows,
+			Rows:      rows,
+			OldOffset: offset,
 		}
 	}
 	return nil
@@ -325,7 +328,6 @@ func writer(mess dataForRecording, conn *pgx.Conn, table, schema string) error {
 
 // Горутина обработки данных для их последующей записи
 func processingData(chIncomData incomTransmissinCh, chOutgoinData outgoingTransmissCh, responseCh responseCh, contolCh controlGorutinCh, offsetCh offsetReturnsCh) {
-	oldOffset := ""
 
 	for {
 		select {
@@ -357,17 +359,17 @@ func processingData(chIncomData incomTransmissinCh, chOutgoinData outgoingTransm
 				}
 				// Если новых записей не было, то горутине чтения отправяляется прошлый оффсет
 				if len(rows) == 0 {
-					offsetCh <- oldOffset
+					offsetCh <- messData.OldOffset
 					continue
 				} else {
-					oldOffset = getLastOffset(rows)
-					offsetCh <- oldOffset
+					newOffset := getLastOffset(rows)
+					offsetCh <- newOffset
 					fields := getFiled(rows)
 					resRows := dictionaryConverter(rows, fields)
 					chOutgoinData <- dataForRecording{
 						Fields:     fields,
 						Data:       resRows,
-						LastOffset: oldOffset,
+						LastOffset: newOffset,
 					}
 				}
 			}

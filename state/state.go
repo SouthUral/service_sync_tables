@@ -77,6 +77,11 @@ func (state *State) HandlerSyncThreads(mess pg.OutgoingMessSync) {
 		}
 		return
 	case pg.RegularSync:
+		if mess.Error != nil {
+			state.StopSyncState(mess.GetID(), mess.Error, false)
+			state.ResponseAPIRequest(mess.GetID(), mess.Error, pg.StartSync)
+			return
+		}
 		itemSync.Offset = mess.Offset
 		itemSync.IsSave = false
 		state.stateStorage[mess.GetID()] = itemSync

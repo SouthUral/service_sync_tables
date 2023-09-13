@@ -86,8 +86,9 @@ func (state *State) updateDataMongo(id_sync string) {
 	newMess := mongo.MessCommand{
 		Info: mongo.UpdateData,
 		Data: mongo.StateMess{
-			Oid:      itemSync.Id,
+			Oid:      id_sync,
 			DataBase: itemSync.DataBase,
+			Schema:   itemSync.Schema,
 			Table:    itemSync.Table,
 			Offset:   fmt.Sprintf("%s", itemSync.Offset),
 			IsActive: itemSync.IsActive,
