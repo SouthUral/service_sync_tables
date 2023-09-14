@@ -44,5 +44,5 @@ func main() {
 	URLStorage.InitUrlStorage(inputUrlChan, confStruct)
 
 	log.Info("Server is starting")
-	time.Sleep(1000 * time.Second)
+	time.Sleep(100000 * time.Second)
 }

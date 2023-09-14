@@ -61,9 +61,16 @@ func (pg *postgresMain) mainStreamSync(mainUrl, secondUrl string, incomMess Inco
 		sendErrorMess(incomMess, comparisonError, pg.outgoingChan, StartSync)
 		return
 	}
+	// Нужно получить поле эквивалентное id, по которому можно отсортироваться
+	nameFieldId, err := getFieldIDFromTable(connects.SecondConn, incomMess.Schema, incomMess.Table)
+	if err != nil {
+		FieldNameError := fmt.Errorf("Имя поля ID не получено из-за ошибки: %s", err.Error())
+		log.Error(FieldNameError)
+		sendErrorMess(incomMess, FieldNameError, pg.outgoingChan, StartSync)
+	}
 	// запуск цикла синхронизации
 	log.Info("Запуск синхронизации")
 	shunkTest := "10000"
-	sync(connects, incomMess, shunkTest, pg.outgoingChan)
+	sync(connects, incomMess, shunkTest, pg.outgoingChan, nameFieldId)
 	return
 }

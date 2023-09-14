@@ -14,8 +14,8 @@ import (
 // Принимает на вход структуру с коннекторами к базам, сообщение IncomingMess,
 // chankRead - нужен для определения размера чанка чтения,
 // chankWrite - нужен для определения размера чанка записи.
-func sync(connects ConnectsPG, mess IncomingMess, chankRead string, OutgoingChan OutgoingChanSync) {
-	controlsChunsGor := startFuncsSync(mess, connects, chankRead)
+func sync(connects ConnectsPG, mess IncomingMess, chankRead string, OutgoingChan OutgoingChanSync, nameIdField string) {
+	controlsChunsGor := startFuncsSync(mess, connects, chankRead, nameIdField)
 	// Отправка сообщения для API об успешном старте
 	sendMessForApi(mess, OutgoingChan, StartSync)
 	for {
@@ -111,7 +111,7 @@ type controlsChGorutines struct {
 }
 
 // Функция для старта горутин синхронизации (горутины: readData, writeData, processingData)
-func startFuncsSync(mess IncomingMess, connects ConnectsPG, chankRead string) controlsChGorutines {
+func startFuncsSync(mess IncomingMess, connects ConnectsPG, chankRead, nameIdField string) controlsChGorutines {
 	// каналы для общения между горутинами синхронизации
 	transmissionChForProcessing := make(incomTransmissinCh, 5)
 	transmissionChForWriting := make(outgoingTransmissCh, 5)
@@ -135,6 +135,7 @@ func startFuncsSync(mess IncomingMess, connects ConnectsPG, chankRead string) co
 		mess.Schema,
 		mess.Offset,
 		chankRead,
+		nameIdField,
 
 		answer.chReadData,
 	)
@@ -168,10 +169,10 @@ func sendErrorSync(Info string, ErrorSync error, responseCh responseCh) {
 }
 
 // Функция запроса к БД оффсету
-func doQuery(chToProcessing incomTransmissinCh, responseCh responseCh, conn *pgx.Conn, table, schema, offset, chunk string) error {
+func doQuery(chToProcessing incomTransmissinCh, responseCh responseCh, conn *pgx.Conn, table, schema, offset, chunk, nameIdField string) error {
 	switch offset {
 	case First:
-		query := fmt.Sprintf("SELECT * FROM %s.%s ORDER BY id limit $1::int;", schema, table)
+		query := fmt.Sprintf("SELECT * FROM %s.%s ORDER BY %s limit $1::int;", schema, table, nameIdField)
 		rows, err := conn.Query(context.Background(), query, chunk)
 		if err != nil {
 			sendErrorSync(GorReadData, err, responseCh)
@@ -182,7 +183,7 @@ func doQuery(chToProcessing incomTransmissinCh, responseCh responseCh, conn *pgx
 			OldOffset: offset,
 		}
 	case Last:
-		query := fmt.Sprintf("SELECT * FROM %s.%s ORDER BY id DESC limit 1;", schema, table)
+		query := fmt.Sprintf("SELECT * FROM %s.%s ORDER BY %s DESC limit 1;", schema, table, nameIdField)
 		rows, err := conn.Query(context.Background(), query)
 		if err != nil {
 			sendErrorSync(GorReadData, err, responseCh)
@@ -198,7 +199,7 @@ func doQuery(chToProcessing incomTransmissinCh, responseCh responseCh, conn *pgx
 			sendErrorSync(GorReadData, err, responseCh)
 			return err
 		}
-		query := fmt.Sprintf("SELECT * FROM %s.%s WHERE id > $1::int ORDER BY id limit $2::int;", schema, table)
+		query := fmt.Sprintf("SELECT * FROM %s.%s WHERE %s > $1::int ORDER BY %s limit $2::int;", schema, table, nameIdField, nameIdField)
 		rows, err := conn.Query(context.Background(), query, offset, chunk)
 		if err != nil {
 			sendErrorSync(GorReadData, err, responseCh)
@@ -213,7 +214,7 @@ func doQuery(chToProcessing incomTransmissinCh, responseCh responseCh, conn *pgx
 }
 
 // Горутина чтения данных из БД1
-func readData(chToProcessing incomTransmissinCh, responseCh responseCh, offsetCh offsetReturnsCh, conn *pgx.Conn, table, schema, offset, chunk string, contolCh controlGorutinCh) {
+func readData(chToProcessing incomTransmissinCh, responseCh responseCh, offsetCh offsetReturnsCh, conn *pgx.Conn, table, schema, offset, chunk, nameIdField string, contolCh controlGorutinCh) {
 
 	// Коннект к БД должен закрыться
 	defer closeConn(conn)
@@ -228,7 +229,9 @@ func readData(chToProcessing incomTransmissinCh, responseCh responseCh, offsetCh
 		table,
 		schema,
 		offset,
-		chunk)
+		chunk,
+		nameIdField,
+	)
 	if err != nil {
 		log.Debug("Работа горутины чтения завершена из-за ошибки")
 		return
@@ -254,7 +257,9 @@ func readData(chToProcessing incomTransmissinCh, responseCh responseCh, offsetCh
 				table,
 				schema,
 				messOffset,
-				chunk)
+				chunk,
+				nameIdField,
+			)
 			if err != nil {
 				log.Debug("Работа горутины чтения завершена из-за ошибки")
 				return

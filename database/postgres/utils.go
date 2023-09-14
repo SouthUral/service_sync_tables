@@ -67,3 +67,14 @@ func closeConn(conn *pgx.Conn) {
 	}
 	log.Info("Коннект к БД закрыт")
 }
+
+// Функция для получения поля наименования ID поля из таблицы
+func getFieldIDFromTable(conn *pgx.Conn, schema, table string) (string, error) {
+	var NameId string
+	query := fmt.Sprintf("SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = '%s' and table_name = '%s' and ordinal_position = 1;", schema, table)
+	err := conn.QueryRow(context.Background(), query).Scan(&NameId)
+	if err != nil {
+		return NameId, err
+	}
+	return NameId, nil
+}
