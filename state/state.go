@@ -141,5 +141,11 @@ func (state *State) InitSyncT(data mongo.StateMess) {
 
 	SyncData := state.stateStorage[StorageKey]
 	SyncData.syncChan = chanSync
+	if SyncData.DateEnd != "" {
+		SyncData.DateEnd = ""
+	}
+	if SyncData.Err != nil {
+		SyncData.Err = nil
+	}
 	state.stateStorage[StorageKey] = SyncData
 }
