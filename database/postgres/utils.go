@@ -46,10 +46,24 @@ func sendErrorMess(mess IncomingMess, err error, outgoingChan OutgoingChanSync, 
 	outgoingChan <- outgoingMess
 }
 
+// Функция для отправки сообщения об старте или остановке синхронизации
+func sendMessForApi(mess IncomingMess, outgoingChan OutgoingChanSync, infoMess string) {
+	outgoingMess := OutgoingMessSync{
+		Info:     infoMess,
+		Offset:   mess.Offset,
+		Database: mess.Database,
+		Table:    mess.Table,
+	}
+	outgoingChan <- outgoingMess
+	log.Info(fmt.Sprintf("Сообщение об %s отправлено в State", infoMess))
+}
+
 // Функция для закрытия коннекта к БД
 func closeConn(conn *pgx.Conn) {
 	err := conn.Close(context.Background())
 	if err != nil {
 		log.Warning("Коннект к БД уже был закрыт")
+		return
 	}
+	log.Info("Коннект к БД закрыт")
 }

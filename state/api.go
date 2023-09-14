@@ -68,6 +68,7 @@ func (state *State) ApiHandler(mess api.APImessage) {
 			Chanal:  mess.ApiChan,
 			Сounter: 1,
 		}
+		state.updateDataMongo(key_sync)
 	case api.StartSync:
 		key_sync := fmt.Sprintf("%s_%s", mess.Data.DataBase, mess.Data.Table)
 		itemSync, ok := state.stateStorage[key_sync]
@@ -128,9 +129,7 @@ func (state *State) apiChangeActiveSyncs(mess api.APImessage, active bool) {
 	}
 	for _, key := range keySyncItems {
 		state.StorageChanI[key] = &counterChanUse
-		if active {
-			state.updateDataMongo(key)
-		}
+		state.updateDataMongo(key)
 	}
 }
 

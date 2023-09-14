@@ -16,6 +16,8 @@ import (
 // chankWrite - нужен для определения размера чанка записи.
 func sync(connects ConnectsPG, mess IncomingMess, chankRead string, OutgoingChan OutgoingChanSync) {
 	controlsChunsGor := startFuncsSync(mess, connects, chankRead)
+	// Отправка сообщения для API об успешном старте
+	sendMessForApi(mess, OutgoingChan, StartSync)
 	for {
 		select {
 		case messGorAnswer := <-controlsChunsGor.chResponseGor:
@@ -42,11 +44,14 @@ func sync(connects ConnectsPG, mess IncomingMess, chankRead string, OutgoingChan
 			switch messState {
 			case Stop:
 				go stopSyncGor(controlsChunsGor)
+				sendMessForApi(mess, OutgoingChan, StopSync)
 				return
 			default:
 				// Отправить в горутину записи команду Continue
 				controlsChunsGor.chWriteData <- Continue
 			}
+		default:
+			continue
 		}
 	}
 }
@@ -313,12 +318,13 @@ func writeData(chIncomData outgoingTransmissCh, responseCh responseCh, conn *pgx
 
 // Функция записи данных в таблицу
 func writer(mess dataForRecording, conn *pgx.Conn, table, schema string) error {
-	_, err := conn.CopyFrom(
+	countRows, err := conn.CopyFrom(
 		context.Background(),
 		pgx.Identifier{schema, table},
 		mess.Fields,
 		pgx.CopyFromRows(mess.Data),
 	)
+	log.Info(fmt.Sprintf("Записано %d строк", countRows))
 	if err != nil {
 		log.Error("Ошибка записи в БД", err.Error())
 		return err
