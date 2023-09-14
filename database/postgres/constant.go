@@ -12,6 +12,6 @@ const (
 	ErrorSync        = "error_sync"
 	StopSync         = "stop_sync"
 	RegularSync      = "regular_sinc"
-	QueryTableStruct = "SELECT column_name, data_type FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = '%s';"
+	QueryTableStruct = "SELECT column_name, data_type FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = '%s' AND table_name = '%s';"
 	// QueryReadData = "SELECT * FROM %s.%s WHERE id > 500 ORDER BY id limit 10;"
 )

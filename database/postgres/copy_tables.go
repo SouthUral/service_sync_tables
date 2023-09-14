@@ -178,7 +178,8 @@ func doQuery(chToProcessing incomTransmissinCh, responseCh responseCh, conn *pgx
 			return err
 		}
 		chToProcessing <- MessForProcessingData{
-			Rows: rows,
+			Rows:      rows,
+			OldOffset: offset,
 		}
 	case Last:
 		query := fmt.Sprintf("SELECT * FROM %s.%s ORDER BY id DESC limit 1;", schema, table)

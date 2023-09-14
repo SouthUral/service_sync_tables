@@ -45,7 +45,9 @@ func CheckingStrucTables(connects ConnectsPG, mess IncomingMess) (bool, error) {
 }
 
 func ComparisonTables(tables StructsTablesDb) bool {
-	if len(tables.mainStructTable) != len(tables.secondStructTable) {
+	lenMainTable := len(tables.mainStructTable)
+	lenSecondTable := len(tables.secondStructTable)
+	if lenMainTable != lenSecondTable {
 		return false
 	}
 	for key, value := range tables.mainStructTable {
@@ -77,15 +79,15 @@ func StartGettingStructure(conn *pgx.Conn, mess IncomingMess) ChanTabsStruct {
 	if err != nil {
 		log.Error(conn.Ping(context.Background()))
 	}
-	go RequestStructTable(conn, ch, mess.Table)
+	go RequestStructTable(conn, ch, mess.Table, mess.Schema)
 	return ch
 }
 
-func RequestStructTable(conn *pgx.Conn, ch ChanTabsStruct, table string) {
+func RequestStructTable(conn *pgx.Conn, ch ChanTabsStruct, table, schema string) {
 	result := make(map[string]string)
 	var rowFirst, rowSecond string
 	answer := AnswerTableRequestStruct{}
-	readyQuery := fmt.Sprintf(QueryTableStruct, table)
+	readyQuery := fmt.Sprintf(QueryTableStruct, schema, table)
 	rows, err := conn.Query(context.Background(), readyQuery)
 	if err != nil {
 		answer.errorAnswer = err
