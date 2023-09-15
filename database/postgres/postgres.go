@@ -68,6 +68,11 @@ func (pg *postgresMain) mainStreamSync(mainUrl, secondUrl string, incomMess Inco
 		log.Error(FieldNameError)
 		sendErrorMess(incomMess, FieldNameError, pg.outgoingChan, StartSync)
 	}
+	// Очищает таблицу перед синхронизацией если флаг IncomingMess.Clean true
+	if incomMess.Clean == true {
+		cleanTable(connects.SecondConn, incomMess.Database, incomMess.Schema, incomMess.Table)
+		// если возникнет ошибка при очистке таблицы, синхронизация не отвалится, но есть риск возникновения ошибки далее
+	}
 	// запуск цикла синхронизации
 	log.Info("Запуск синхронизации")
 	shunkTest := "10000"

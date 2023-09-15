@@ -37,6 +37,7 @@ func (state *State) ApiHandler(mess api.APImessage) {
 				DataBase: mess.Data.DataBase,
 				Offset:   mess.Data.Offset,
 				IsActive: mess.Data.IsActive,
+				Clean:    mess.Data.Clean,
 			},
 		}
 		state.mdbInput <- messComand

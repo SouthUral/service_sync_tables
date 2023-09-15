@@ -19,6 +19,7 @@ type IncomingMess struct {
 	Schema     string
 	Database   string
 	Offset     string
+	Clean      bool
 	ChCommSync CommToSync
 }
 

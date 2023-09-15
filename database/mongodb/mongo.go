@@ -84,6 +84,7 @@ func (mdb *MongoBase) mongoWorker(ch_input chan MessCommand, ch_output chan Mess
 
 				ch_output <- answer
 			}
+
 		case InputData:
 			// метод используется для добавления нового состояния в БД
 			var answer MessCommand
@@ -94,20 +95,21 @@ func (mdb *MongoBase) mongoWorker(ch_input chan MessCommand, ch_output chan Mess
 					Data:  msg.Data,
 					Error: err,
 				}
-				ch_output <- answer
-				return
-			}
-			answer = MessCommand{
-				Info:  InputData,
-				Data:  answDB,
-				Error: nil,
+			} else {
+				answer = MessCommand{
+					Info:  InputData,
+					Data:  answDB,
+					Error: nil,
+				}
 			}
 			ch_output <- answer
+
 		case DropCollection:
 			err := mdb.dropCollection(collection)
 			if err != nil {
 				return
 			}
+
 		case UpdateData:
 			var answer MessCommand
 			err := mdb.updateData(msg.Data, collection)
@@ -184,9 +186,7 @@ func (mdb *MongoBase) inputData(data StateMess, colection *mongo.Collection) (in
 
 	fmt.Println("Inserted a single document: ", resMess)
 	id := getId(fmt.Sprintf("%s", resMess))
-	// if err != nil {
-	// 	log.Error(err)
-	// }
+
 	DbObject = StateMess{
 		Oid:      id,
 		Table:    data.Table,
@@ -194,6 +194,7 @@ func (mdb *MongoBase) inputData(data StateMess, colection *mongo.Collection) (in
 		DataBase: data.DataBase,
 		Offset:   data.Offset,
 		IsActive: data.IsActive,
+		Clean:    data.Clean,
 	}
 
 	return nil, DbObject

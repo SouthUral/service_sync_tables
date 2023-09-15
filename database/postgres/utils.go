@@ -78,3 +78,15 @@ func getFieldIDFromTable(conn *pgx.Conn, schema, table string) (string, error) {
 	}
 	return NameId, nil
 }
+
+// Функция для очистки таблицы перед записью
+func cleanTable(conn *pgx.Conn, dataBase, schema, table string) error {
+	query := fmt.Sprintf("TRUNCATE TABLE %s.%s;", schema, table)
+	_, err := conn.Exec(context.Background(), query)
+	if err != nil {
+		log.Error(fmt.Sprintf("Таблица %s.%s в БД %s не очищена из-за ошибки : %s", schema, table, dataBase, err.Error()))
+		return err
+	}
+	log.Info(fmt.Sprintf("Таблица %s.%s в БД %s очищена", schema, table, dataBase))
+	return nil
+}

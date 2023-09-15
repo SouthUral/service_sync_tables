@@ -155,6 +155,7 @@ func startFuncsSync(mess IncomingMess, connects ConnectsPG, chankRead, nameIdFie
 		responseChGorutines,
 		answer.chProcessingData,
 		offsetCh,
+		nameIdField,
 	)
 
 	return answer
@@ -332,14 +333,14 @@ func writer(mess dataForRecording, conn *pgx.Conn, table, schema string) error {
 	)
 	log.Info(fmt.Sprintf("Записано %d строк", countRows))
 	if err != nil {
-		log.Error("Ошибка записи в БД", err.Error())
+		log.Error("Ошибка записи в БД ", err.Error())
 		return err
 	}
 	return nil
 }
 
 // Горутина обработки данных для их последующей записи
-func processingData(chIncomData incomTransmissinCh, chOutgoinData outgoingTransmissCh, responseCh responseCh, contolCh controlGorutinCh, offsetCh offsetReturnsCh) {
+func processingData(chIncomData incomTransmissinCh, chOutgoinData outgoingTransmissCh, responseCh responseCh, contolCh controlGorutinCh, offsetCh offsetReturnsCh, nameField string) {
 
 	for {
 		select {
@@ -357,7 +358,7 @@ func processingData(chIncomData incomTransmissinCh, chOutgoinData outgoingTransm
 					offsetCh <- Last
 					continue
 				} else {
-					lastOffset := getLastOffset(rows)
+					lastOffset := getLastOffset(rows, nameField)
 					offsetCh <- lastOffset
 				}
 			default:
@@ -374,7 +375,7 @@ func processingData(chIncomData incomTransmissinCh, chOutgoinData outgoingTransm
 					offsetCh <- messData.OldOffset
 					continue
 				} else {
-					newOffset := getLastOffset(rows)
+					newOffset := getLastOffset(rows, nameField)
 					offsetCh <- newOffset
 					fields := getFiled(rows)
 					resRows := dictionaryConverter(rows, fields)
@@ -412,10 +413,10 @@ func rowsToMap(rows pgx.Rows) ([]rowTable, error) {
 }
 
 // Функция получает []rowTable и возвращает последний оффсет в формате строки
-func getLastOffset(rows []rowTable) string {
+func getLastOffset(rows []rowTable, FieldId string) string {
 	lastId := len(rows) - 1
 	lastItem := rows[lastId]
-	return fmt.Sprintf("%d", lastItem["id"])
+	return fmt.Sprintf("%d", lastItem[FieldId])
 }
 
 // Функция генерирует слайс с именами полей, слайс с полями необходим для записи данных в таблицу

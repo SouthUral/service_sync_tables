@@ -20,6 +20,7 @@ type InputDataApi struct {
 	DataBase string `json:"data_base"`
 	IsActive bool   `json:"is_active"`
 	Offset   string `json:"offset"`
+	Clean    bool   `json:"clean"`
 }
 
 // Структура для упаковки сообщения для State из API

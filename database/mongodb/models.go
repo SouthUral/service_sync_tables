@@ -7,6 +7,7 @@ type StateMess struct {
 	Schema   string
 	DataBase string
 	Offset   string
+	Clean    bool // флаг для очистки таблицы перед синхронизацией
 	IsActive bool
 }
 

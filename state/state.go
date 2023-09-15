@@ -137,7 +137,7 @@ func (state *State) InitSyncT(data mongo.StateMess) {
 	// создает канал для связи с горутиной, запускает горутину и записывает канал в структуру по id
 	StorageKey := fmt.Sprintf("%s_%s", data.DataBase, data.Table)
 
-	chanSync := pg.StartSyncPg(state.chanStartSync, data.DataBase, data.Table, data.Schema, data.Offset)
+	chanSync := pg.StartSyncPg(state.chanStartSync, data.DataBase, data.Table, data.Schema, data.Offset, data.Clean)
 
 	SyncData := state.stateStorage[StorageKey]
 	SyncData.syncChan = chanSync
