@@ -124,6 +124,7 @@ func (state *State) AddInfoToStorage(data mongo.StateMess) {
 		Offset:    data.Offset,
 		Err:       nil,
 		IsSave:    true,
+		Clean:     data.Clean,
 		IsActive:  data.IsActive,
 		DateStart: time.Now(),
 		DateEnd:   nil,

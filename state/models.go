@@ -35,6 +35,7 @@ type StateSyncStorage struct {
 	Err       interface{} `json:"error"`
 	IsSave    bool        `json:"is_save"`
 	IsActive  bool        `json:"is_active"`
+	Clean     bool        `json:"clean"`
 	syncChan  chan string
 	DateStart interface{} `json:"date_start"`
 	DateEnd   interface{} `json:"date_end"`

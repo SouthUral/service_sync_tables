@@ -91,6 +91,7 @@ func (state *State) updateDataMongo(id_sync string) {
 			Schema:   itemSync.Schema,
 			Table:    itemSync.Table,
 			Offset:   fmt.Sprintf("%s", itemSync.Offset),
+			Clean:    itemSync.Clean,
 			IsActive: itemSync.IsActive,
 		},
 	}
