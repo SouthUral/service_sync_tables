@@ -16,9 +16,11 @@ type StateAnswer struct {
 // Структура для получения и расшифровки данных от клиента
 type InputDataApi struct {
 	Table    string `json:"table"`
+	Schema   string `json:"schema"`
 	DataBase string `json:"data_base"`
 	IsActive bool   `json:"is_active"`
 	Offset   string `json:"offset"`
+	Clean    bool   `json:"clean"`
 }
 
 // Структура для упаковки сообщения для State из API
@@ -32,6 +34,10 @@ type APImessage struct {
 type ErrorResponse struct {
 	Status bool        `json:"status"`
 	Error  interface{} `json:"error"`
+}
+
+type RequestDBConn struct {
+	Alias string `json:"alias"`
 }
 
 // // Канал для возврата сообщения из State в Api

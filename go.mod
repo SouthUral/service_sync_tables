@@ -9,6 +9,8 @@ require (
 
 require (
 	github.com/gofrs/uuid v4.2.0+incompatible // indirect
+	github.com/jackc/pgpassfile v1.0.0 // indirect
+	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/swaggo/files/v2 v2.0.0 // indirect
 )
 
@@ -22,6 +24,7 @@ require (
 	github.com/go-openapi/spec v0.20.9 // indirect
 	github.com/go-openapi/swag v0.22.4 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
+	github.com/jackc/pgx/v5 v5.4.3
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect

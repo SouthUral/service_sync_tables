@@ -5,6 +5,7 @@ import (
 
 	api "github.com/SouthUral/service_sync_tables/api"
 	mongo "github.com/SouthUral/service_sync_tables/database/mongodb"
+	pg "github.com/SouthUral/service_sync_tables/database/postgres"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -32,9 +33,11 @@ func (state *State) ApiHandler(mess api.APImessage) {
 			Info: mongo.InputData,
 			Data: mongo.StateMess{
 				Table:    mess.Data.Table,
+				Schema:   mess.Data.Schema,
 				DataBase: mess.Data.DataBase,
 				Offset:   mess.Data.Offset,
 				IsActive: mess.Data.IsActive,
+				Clean:    mess.Data.Clean,
 			},
 		}
 		state.mdbInput <- messComand
@@ -66,6 +69,7 @@ func (state *State) ApiHandler(mess api.APImessage) {
 			Chanal:  mess.ApiChan,
 			Сounter: 1,
 		}
+		state.updateDataMongo(key_sync)
 	case api.StartSync:
 		key_sync := fmt.Sprintf("%s_%s", mess.Data.DataBase, mess.Data.Table)
 		itemSync, ok := state.stateStorage[key_sync]
@@ -124,11 +128,27 @@ func (state *State) apiChangeActiveSyncs(mess api.APImessage, active bool) {
 
 		keySyncItems = append(keySyncItems, key)
 	}
+
+	// Отправка данных об уже остановленных или уже запущенных синхронизациях
+	// После отправки канал обязательно должен быть закрыт иначе API заблокируется и не отдаст ответа
+	if counterChanUse.Сounter == 0 {
+		switch active {
+		case true:
+			mess.ApiChan <- api.StateAnswer{
+				Info: "Все синхронизации уже запущены",
+			}
+		case false:
+			mess.ApiChan <- api.StateAnswer{
+				Info: "Все синхронизации уже остановлены",
+			}
+		}
+		close(mess.ApiChan)
+		return
+	}
+
 	for _, key := range keySyncItems {
 		state.StorageChanI[key] = &counterChanUse
-		if active {
-			state.updateDataMongo(key)
-		}
+		state.updateDataMongo(key)
 	}
 }
 
@@ -147,20 +167,21 @@ func (state *State) ResponseAPIRequest(key string, err interface{}, status strin
 	}
 
 	switch status {
-	case StartSync:
+	case pg.StartSync:
 		if err != nil {
 			apiMess.Info = "sync did not start due to an error"
 			apiMess.Err = err
 		} else {
 			apiMess.Info = "sync has started successfully"
 		}
-	case StopSync:
+	case pg.StopSync:
 		apiMess.Info = "sync has been stopped"
 	}
 
 	chanCount.Chanal <- apiMess
 
-	// проверка сколько сообщений
+	// проверка сколько сообщений ожидает канал, если остается одно сообщение
+	// то оно отправляется и канал закрывается
 	if chanCount.Сounter > 1 {
 		chanCount.Сounter--
 	} else {
@@ -168,5 +189,7 @@ func (state *State) ResponseAPIRequest(key string, err interface{}, status strin
 		close(chanCount.Chanal)
 	}
 
+	// Удаление канала из словаря по ключу,
+	// канал не будет полностью удален из словаря пока есть ключи имеющие ссылки на канал
 	delete(state.StorageChanI, key)
 }

@@ -1,8 +1,10 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 
+	url "github.com/SouthUral/service_sync_tables/database/urlstorage"
 	_ "github.com/SouthUral/service_sync_tables/docs"
 	tools "github.com/SouthUral/service_sync_tables/tools"
 
@@ -11,27 +13,33 @@ import (
 )
 
 type Server struct {
-	Port     string
-	OutputCh OutputAPIChan
+	Port       string
+	OutputCh   OutputAPIChan
+	URLInputCh url.InputUrlStorageAPIch
 }
 
 // инициализатор go сервера
-func InitServer(OutPutChan OutputAPIChan) {
+func InitServer(OutPutChan OutputAPIChan, URLChan url.InputUrlStorageAPIch) {
 	srv := Server{
-		Port:     ":" + tools.GetEnv("SERVER_PORT"),
-		OutputCh: OutPutChan,
+		Port:       ":" + tools.GetEnv("SERVER_PORT"),
+		OutputCh:   OutPutChan,
+		URLInputCh: URLChan,
 	}
 	go srv.StartServer()
 }
 
 func (srv *Server) StartServer() {
 	http.HandleFunc("/swagger/", httpSwagger.Handler(httpSwagger.URL("http://localhost:3000/swagger/doc.json")))
-	http.HandleFunc("/all_sync", midlware(srv.allSync))
-	http.HandleFunc("/add_sync", midlware(srv.addNewSync))
-	http.HandleFunc("/stop_sync", midlware(srv.stopSync))
-	http.HandleFunc("/start_sync", midlware(srv.startSync))
-	http.HandleFunc("/start-allSync", midlware(srv.startAllSync))
-	http.HandleFunc("/stop-allSync", midlware(srv.stopAllSync))
+	http.HandleFunc("/all_sync", midlwareGET(srv.allSync))
+	http.HandleFunc("/add_sync", midlwarePOST(srv.addNewSync))
+	http.HandleFunc("/stop_sync", midlwarePOST(srv.stopSync))
+	http.HandleFunc("/start_sync", midlwarePOST(srv.startSync))
+	http.HandleFunc("/start-allSync", midlwarePOST(srv.startAllSync))
+	http.HandleFunc("/stop-allSync", midlwarePOST(srv.stopAllSync))
+	http.HandleFunc("/all-conn-bd", midlwareGET(srv.GetAllDBConn))
+	http.HandleFunc("/one-conn-bd", midlwareGET(srv.GetOneDBConn))
+	http.HandleFunc("/change-one-conn-bd", midlwarePUT(srv.ChangeOneDBConn))
+	http.HandleFunc("/add-one-conn-bd", midlwarePOST(srv.AddOneDBConn))
 	http.ListenAndServe(srv.Port, nil)
 
 }
@@ -98,9 +106,60 @@ func (srv *Server) stopAllSync(w http.ResponseWriter, r *http.Request) {
 	log.Info("stopAllSync request processed")
 }
 
+func (srv *Server) GetAllDBConn(w http.ResponseWriter, r *http.Request) {
+	GetURLmethod(w, r, srv.URLInputCh)
+	log.Info("GetAllDBConn request processed")
+}
+
+func (srv *Server) GetOneDBConn(w http.ResponseWriter, r *http.Request) {
+	getOneURLMethod(w, r, srv.URLInputCh)
+	log.Info("GetOneDBConn request processed")
+}
+
+func (srv *Server) ChangeOneDBConn(w http.ResponseWriter, r *http.Request) {
+	changeOneURLMethod(w, r, srv.URLInputCh)
+	log.Info("ChangeOneDBConn request processed")
+}
+
+func (srv *Server) AddOneDBConn(w http.ResponseWriter, r *http.Request) {
+	addOneURLMethod(w, r, srv.URLInputCh)
+	log.Info("AddOneDBConn request processed")
+}
+
 // мидлвар с дебаг логом
-func midlware(handler http.HandlerFunc) http.HandlerFunc {
+func midlwareGET(handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			log.Error(fmt.Sprintf("Вызван метод %s, ожидается метод %s", r.Method, http.MethodGet))
+			ErrorWriter(w, "Request error", http.StatusBadRequest)
+			return
+		}
+		log.Debug(r.Method)
+		handler(w, r)
+	}
+}
+
+// мидлвар с дебаг логом
+func midlwarePOST(handler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			log.Error(fmt.Sprintf("Вызван метод %s, ожидается метод %s", r.Method, http.MethodPost))
+			ErrorWriter(w, "Request error", http.StatusBadRequest)
+			return
+		}
+		log.Debug(r.Method)
+		handler(w, r)
+	}
+}
+
+// мидлвар с дебаг логом
+func midlwarePUT(handler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			log.Error(fmt.Sprintf("Вызван метод %s, ожидается метод %s", r.Method, http.MethodPut))
+			ErrorWriter(w, "Request error", http.StatusBadRequest)
+			return
+		}
 		log.Debug(r.Method)
 		handler(w, r)
 	}

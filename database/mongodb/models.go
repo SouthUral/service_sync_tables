@@ -4,8 +4,10 @@ package mongodb
 type StateMess struct {
 	Oid      string
 	Table    string
+	Schema   string
 	DataBase string
 	Offset   string
+	Clean    bool // флаг для очистки таблицы перед синхронизацией
 	IsActive bool
 }
 
