@@ -150,6 +150,7 @@ func (mdb *MongoBase) updateData(data StateMess, collection *mongo.Collection) i
 			"database": data.DataBase,
 			"offset":   data.Offset,
 			"isactive": data.IsActive,
+			"clean":    data.Clean,
 		},
 	}
 	updateRes, err := collection.UpdateOne(mdb.ctx, filter, updated)

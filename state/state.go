@@ -71,6 +71,7 @@ func (state *State) HandlerSyncThreads(mess pg.OutgoingMessSync) {
 	case pg.StartSync:
 		if mess.Error == nil {
 			state.ResponseAPIRequest(mess.GetID(), nil, pg.StartSync)
+			state.InstallFlagCleanFalse(mess.GetID())
 		} else {
 			state.StopSyncState(mess.GetID(), mess.Error, false)
 			state.ResponseAPIRequest(mess.GetID(), mess.Error, pg.StartSync)
@@ -89,6 +90,18 @@ func (state *State) HandlerSyncThreads(mess pg.OutgoingMessSync) {
 		log.Debug("Данные из горутины отправлены на сохранение в MongoDB")
 	case pg.StopSync:
 		state.ResponseAPIRequest(mess.GetID(), nil, pg.StopSync)
+	}
+
+}
+
+// Устанавливает флаг clean в положение false если тот был установлен true при запуске
+func (state *State) InstallFlagCleanFalse(key string) {
+	itemSync := state.stateStorage[key]
+
+	if itemSync.Clean == true {
+		itemSync.Clean = false
+		state.stateStorage[key] = itemSync
+		state.updateDataMongo(key)
 	}
 
 }
