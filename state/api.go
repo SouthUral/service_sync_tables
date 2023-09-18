@@ -128,6 +128,24 @@ func (state *State) apiChangeActiveSyncs(mess api.APImessage, active bool) {
 
 		keySyncItems = append(keySyncItems, key)
 	}
+
+	// Отправка данных об уже остановленных или уже запущенных синхронизациях
+	// После отправки канал обязательно должен быть закрыт иначе API заблокируется и не отдаст ответа
+	if counterChanUse.Сounter == 0 {
+		switch active {
+		case true:
+			mess.ApiChan <- api.StateAnswer{
+				Info: "Все синхронизации уже запущены",
+			}
+		case false:
+			mess.ApiChan <- api.StateAnswer{
+				Info: "Все синхронизации уже остановлены",
+			}
+		}
+		close(mess.ApiChan)
+		return
+	}
+
 	for _, key := range keySyncItems {
 		state.StorageChanI[key] = &counterChanUse
 		state.updateDataMongo(key)
@@ -162,7 +180,8 @@ func (state *State) ResponseAPIRequest(key string, err interface{}, status strin
 
 	chanCount.Chanal <- apiMess
 
-	// проверка сколько сообщений
+	// проверка сколько сообщений ожидает канал, если остается одно сообщение
+	// то оно отправляется и канал закрывается
 	if chanCount.Сounter > 1 {
 		chanCount.Сounter--
 	} else {
@@ -170,5 +189,7 @@ func (state *State) ResponseAPIRequest(key string, err interface{}, status strin
 		close(chanCount.Chanal)
 	}
 
+	// Удаление канала из словаря по ключу,
+	// канал не будет полностью удален из словаря пока есть ключи имеющие ссылки на канал
 	delete(state.StorageChanI, key)
 }
