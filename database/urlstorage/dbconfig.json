@@ -1,56 +1,6 @@
 [
   {
-    "db_alias": "alias1",
-    "conn_data": {
-      "host": "example_host",
-      "port": "1234",
-      "bd_name": "example_name_1",
-      "user": "example_user",
-      "password": "example_password"
-    }
-  },
-  {
-    "db_alias": "alias2",
-    "conn_data": {
-      "host": "example_host_2",
-      "port": "4321",
-      "bd_name": "example_name_2",
-      "user": "example_user_2",
-      "password": "example_password_2"
-    }
-  },
-  {
-    "db_alias": "alias3",
-    "conn_data": {
-      "host": "example_host_3",
-      "port": "5678",
-      "bd_name": "example_name_3",
-      "user": "example_user_3",
-      "password": "example_password_3"
-    }
-  },
-  {
-    "db_alias": "test_alias",
-    "conn_data": {
-      "host": "1234",
-      "port": "t1223est",
-      "bd_name": "2313131",
-      "user": "12313131",
-      "password": "1231313"
-    }
-  },
-  {
-    "db_alias": "main_db",
-    "conn_data": {
-      "host": "localhost",
-      "port": "5432",
-      "bd_name": "poly_bgp",
-      "user": "kovalenko",
-      "password": "7500"
-    }
-  },
-  {
-    "db_alias": "test_base_1",
+    "db_alias": "test_1",
     "conn_data": {
       "host": "localhost",
       "port": "5471",
