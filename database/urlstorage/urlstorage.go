@@ -2,12 +2,6 @@ package urlstorage
 
 // пакет для хранения и работы с url для подключениям к БД
 
-import (
-	// "fmt"
-
-	Config "github.com/SouthUral/service_sync_tables/config"
-)
-
 // структура необходимая для работы модуля urlstorage
 type urlStorage struct {
 	storage        StorageConnDB
@@ -18,11 +12,11 @@ type urlStorage struct {
 // функция для инициализации urlstorage.
 // На вход функция получает канал для получения сообщений
 // и map с набором env переменных, которые будут использоваться в этом модуле
-func InitUrlStorage(InputCh InputUrlStorageAPIch, ConfVars Config.ConfEnum) {
+func InitUrlStorage(InputCh InputUrlStorageAPIch, UrlStoragePass string) {
 	urlStorage := urlStorage{
 		storage:        make(StorageConnDB),
 		inputChan:      InputCh,
-		urlStoragePath: ConfVars.UrlStoragePass,
+		urlStoragePath: UrlStoragePass,
 	}
 
 	go urlStorage.urlMain()
