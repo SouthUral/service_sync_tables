@@ -6,7 +6,6 @@ import (
 
 	url "github.com/SouthUral/service_sync_tables/database/urlstorage"
 	_ "github.com/SouthUral/service_sync_tables/docs"
-	tools "github.com/SouthUral/service_sync_tables/tools"
 
 	log "github.com/sirupsen/logrus"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
@@ -19,9 +18,9 @@ type Server struct {
 }
 
 // инициализатор go сервера
-func InitServer(OutPutChan OutputAPIChan, URLChan url.InputUrlStorageAPIch) {
+func InitServer(OutPutChan OutputAPIChan, URLChan url.InputUrlStorageAPIch, serverPort string) {
 	srv := Server{
-		Port:       ":" + tools.GetEnv("SERVER_PORT"),
+		Port:       ":" + serverPort,
 		OutputCh:   OutPutChan,
 		URLInputCh: URLChan,
 	}

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"time"
 
 	Api "github.com/SouthUral/service_sync_tables/api"
@@ -23,24 +22,13 @@ import (
 func main() {
 
 	// Загрузка переменных окружения
-	envVars := make(map[string]string)
-
-	envVars["urlStoragePass"] = tools.GetEnv("URL_STORAGE_PASS")
-	envVars["mongoHost"] = tools.GetEnv("MONGO_HOST")
-	envVars["mongoPort"] = tools.GetEnv("MONGO_PORT")
-	envVars["mongoCollection"] = tools.GetEnv("MONGO_COLLECTION")
-	envVars["mongoDataBase"] = tools.GetEnv("MONGO_DATABASE")
-	envVars["apiServerPort"] = tools.GetEnv("API_SERVER_PORT")
-	envVars["logLevel"] = tools.GetEnv("LOG_LEVEL")
-
-	for key, value := range envVars {
-		if value == "" {
-			log.Error(fmt.Sprintf("Переменная окружения %s не обнаружена!", key))
-			return
-		}
+	envs, err := tools.LoadingEnvVars()
+	if err != nil {
+		log.Error(err)
+		return
 	}
 
-	log.SetLevel(log.InfoLevel)
+	log.SetLevel(envs.LogLevel)
 
 	outgoingSyncCh, ingoingPgCh := Postgres.GenerateChan()
 	inputMDBchan := make(Mongo.MongoInputChan, 100)
@@ -48,13 +36,13 @@ func main() {
 	outputMDBchan := make(Mongo.MongoOutputChan, 100)
 	outputApiChan := make(Api.OutputAPIChan, 100)
 
-	Mongo.MDBInit(inputMDBchan, outputMDBchan)
-	Api.InitServer(outputApiChan, inputUrlChan)
+	Mongo.MDBInit(inputMDBchan, outputMDBchan, envs.GetMongoEnvs())
+	Api.InitServer(outputApiChan, inputUrlChan, envs.ApiServerPort)
 	State.InitState(inputMDBchan, outputMDBchan, outputApiChan, outgoingSyncCh, ingoingPgCh)
 	Postgres.InitPostgres(inputUrlChan, ingoingPgCh, outgoingSyncCh)
 
 	// инициализация модуля работы с URL
-	URLStorage.InitUrlStorage(inputUrlChan, envVars["urlStoragePass"])
+	URLStorage.InitUrlStorage(inputUrlChan, envs.UrlStoragePass)
 
 	log.Info("Server is starting")
 	time.Sleep(100000 * time.Second)

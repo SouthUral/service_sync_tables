@@ -24,16 +24,12 @@ type MongoBase struct {
 	client     *mongo.Client
 }
 
-func (mdb *MongoBase) getMongoEnv() {
-	host := tools.GetEnv("MONGO_HOST")
-	port := tools.GetEnv("MONGO_PORT")
-	mdb.collection = tools.GetEnv("MONGO_COLLECTION")
-	mdb.database = tools.GetEnv("MONGO_DATABASE")
-	mdb.url = fmt.Sprintf("mongodb://%s:%s", host, port)
-}
-
-func MDBInit(ch_input chan MessCommand, ch_output chan MessCommand) {
-	mdb := MongoBase{}
+func MDBInit(ch_input chan MessCommand, ch_output chan MessCommand, envs tools.MongoEnvs) {
+	mdb := MongoBase{
+		collection: envs.Collection,
+		database:   envs.DataBase,
+		url:        fmt.Sprintf("mongodb://%s:%s", envs.Host, envs.Port),
+	}
 	log.Debug("Запуск MDB")
 	go mdb.MongoMain(ch_input, ch_output)
 }
@@ -41,7 +37,6 @@ func MDBInit(ch_input chan MessCommand, ch_output chan MessCommand) {
 // Запускает MongoWorker в цикле, если происходит дисконнект, то MongoWorker будет
 // постоянно перезапускаться
 func (mdb *MongoBase) MongoMain(ch_input chan MessCommand, ch_output chan MessCommand) {
-	mdb.getMongoEnv()
 	counter := 1
 	for {
 		err := mdb.connectMongo()
