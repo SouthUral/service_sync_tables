@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 
 	url "github.com/SouthUral/service_sync_tables/database/urlstorage"
@@ -29,16 +28,16 @@ func InitServer(OutPutChan OutputAPIChan, URLChan url.InputUrlStorageAPIch, serv
 
 func (srv *Server) StartServer() {
 	http.HandleFunc("/swagger/", httpSwagger.Handler(httpSwagger.URL("http://localhost:3000/swagger/doc.json")))
-	http.HandleFunc("/all_sync", midlwareGET(srv.allSync))
-	http.HandleFunc("/add_sync", midlwarePOST(srv.addNewSync))
-	http.HandleFunc("/stop_sync", midlwarePOST(srv.stopSync))
-	http.HandleFunc("/start_sync", midlwarePOST(srv.startSync))
-	http.HandleFunc("/start-allSync", midlwarePOST(srv.startAllSync))
-	http.HandleFunc("/stop-allSync", midlwarePOST(srv.stopAllSync))
-	http.HandleFunc("/all-conn-bd", midlwareGET(srv.GetAllDBConn))
-	http.HandleFunc("/one-conn-bd", midlwareGET(srv.GetOneDBConn))
-	http.HandleFunc("/change-one-conn-bd", midlwarePUT(srv.ChangeOneDBConn))
-	http.HandleFunc("/add-one-conn-bd", midlwarePOST(srv.AddOneDBConn))
+	http.HandleFunc("/all_sync", middlwareGET(srv.allSync))
+	http.HandleFunc("/add_sync", middlwarePOST(srv.addNewSync))
+	http.HandleFunc("/stop_sync", middlwarePOST(srv.stopSync))
+	http.HandleFunc("/start_sync", middlwarePOST(srv.startSync))
+	http.HandleFunc("/start-allSync", middlwarePOST(srv.startAllSync))
+	http.HandleFunc("/stop-allSync", middlwarePOST(srv.stopAllSync))
+	http.HandleFunc("/all-conn-bd", middlwareGET(srv.GetAllDBConn))
+	http.HandleFunc("/one-conn-bd", middlwareGET(srv.GetOneDBConn))
+	http.HandleFunc("/change-one-conn-bd", middlwarePUT(srv.ChangeOneDBConn))
+	http.HandleFunc("/add-one-conn-bd", middlwarePOST(srv.AddOneDBConn))
 	http.ListenAndServe(srv.Port, nil)
 
 }
@@ -123,43 +122,4 @@ func (srv *Server) ChangeOneDBConn(w http.ResponseWriter, r *http.Request) {
 func (srv *Server) AddOneDBConn(w http.ResponseWriter, r *http.Request) {
 	addOneURLMethod(w, r, srv.URLInputCh)
 	log.Info("AddOneDBConn request processed")
-}
-
-// мидлвар с дебаг логом
-func midlwareGET(handler http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			log.Error(fmt.Sprintf("Вызван метод %s, ожидается метод %s", r.Method, http.MethodGet))
-			ErrorWriter(w, "Request error", http.StatusBadRequest)
-			return
-		}
-		log.Debug(r.Method)
-		handler(w, r)
-	}
-}
-
-// мидлвар с дебаг логом
-func midlwarePOST(handler http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			log.Error(fmt.Sprintf("Вызван метод %s, ожидается метод %s", r.Method, http.MethodPost))
-			ErrorWriter(w, "Request error", http.StatusBadRequest)
-			return
-		}
-		log.Debug(r.Method)
-		handler(w, r)
-	}
-}
-
-// мидлвар с дебаг логом
-func midlwarePUT(handler http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPut {
-			log.Error(fmt.Sprintf("Вызван метод %s, ожидается метод %s", r.Method, http.MethodPut))
-			ErrorWriter(w, "Request error", http.StatusBadRequest)
-			return
-		}
-		log.Debug(r.Method)
-		handler(w, r)
-	}
 }
