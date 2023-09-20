@@ -1,14 +1,29 @@
 basePath: /
 definitions:
+  api.ErrorResponse:
+    properties:
+      error: {}
+      status:
+        type: boolean
+    type: object
   api.InputDataApi:
     properties:
+      clean:
+        type: boolean
       data_base:
         type: string
       is_active:
         type: boolean
       offset:
         type: string
+      schema:
+        type: string
       table:
+        type: string
+    type: object
+  api.RequestDBConn:
+    properties:
+      alias:
         type: string
     type: object
   api.StateAnswer:
@@ -18,13 +33,58 @@ definitions:
       info:
         type: string
     type: object
+  urlstorage.ConnDBData:
+    properties:
+      bd_name:
+        type: string
+      host:
+        type: string
+      password:
+        type: string
+      port:
+        type: string
+      user:
+        type: string
+    type: object
+  urlstorage.JsonFormat:
+    properties:
+      conn_data:
+        $ref: '#/definitions/urlstorage.ConnDBData'
+      db_alias:
+        type: string
+    type: object
+  urlstorage.StorageConnDB:
+    additionalProperties:
+      $ref: '#/definitions/urlstorage.ConnDBData'
+    type: object
 host: localhost:3000
 info:
   contact: {}
-  description: This is a sample server Petstore server.
+  description: API для взаимодействия с сервисом синхронизации таблиц баз данных.
   title: sync_service
   version: "1.0"
 paths:
+  /add-one-conn-bd:
+    post:
+      consumes:
+      - application/json
+      description: метод для добавления параметров подключения к БД
+      parameters:
+      - description: body example
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/urlstorage.JsonFormat'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/urlstorage.StorageConnDB'
+      summary: AddOneDBConn
+      tags:
+      - POST
   /add_sync:
     post:
       description: метод для добавления новой синхронизации
@@ -37,7 +97,23 @@ paths:
       responses: {}
       summary: addNewSync
       tags:
-      - Post
+      - POST
+  /all-connbd:
+    get:
+      consumes:
+      - application/json
+      description: метод для получения параметров подключения к базам данных и их
+        элиасу
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/urlstorage.StorageConnDB'
+      summary: getAllDBConn
+      tags:
+      - GET
   /all_sync:
     get:
       consumes:
@@ -52,14 +128,60 @@ paths:
             $ref: '#/definitions/api.StateAnswer'
       summary: allSync
       tags:
-      - Get
+      - GET
+  /change-one-conn-bd:
+    put:
+      consumes:
+      - application/json
+      description: метод для изменения параметров подключения к БД по элиасу
+      parameters:
+      - description: body example
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/urlstorage.JsonFormat'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.StateAnswer'
+      summary: ChangeOneDBConn
+      tags:
+      - PUT
+  /one-conn-bd:
+    post:
+      consumes:
+      - application/json
+      description: метод для получения параметров подключения к БД по элиасу
+      parameters:
+      - description: body example
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/api.RequestDBConn'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/urlstorage.ConnDBData'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      summary: getOneDBConn
+      tags:
+      - GET
   /start-allSync:
     post:
       description: метод для старта всех синхронизаций
       responses: {}
       summary: startAllSync
       tags:
-      - Post
+      - POST
   /start_sync:
     post:
       description: метод для старта приостановленной синхронизации
@@ -72,7 +194,14 @@ paths:
       responses: {}
       summary: startSync
       tags:
-      - Post
+      - POST
+  /stop-allSync:
+    post:
+      description: метод остановки всех синхронизаций
+      responses: {}
+      summary: stopAllSync
+      tags:
+      - POST
   /stop_sync:
     post:
       description: метод для остановки синхронизации
@@ -85,5 +214,5 @@ paths:
       responses: {}
       summary: stopSync
       tags:
-      - Post
+      - POST
 swagger: "2.0"

@@ -16,11 +16,44 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/add-one-conn-bd": {
+            "post": {
+                "description": "метод для добавления параметров подключения к БД",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "POST"
+                ],
+                "summary": "AddOneDBConn",
+                "parameters": [
+                    {
+                        "description": "body example",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/urlstorage.JsonFormat"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/urlstorage.StorageConnDB"
+                        }
+                    }
+                }
+            }
+        },
         "/add_sync": {
             "post": {
                 "description": "метод для добавления новой синхронизации",
                 "tags": [
-                    "Post"
+                    "POST"
                 ],
                 "summary": "addNewSync",
                 "parameters": [
@@ -36,6 +69,29 @@ const docTemplate = `{
                 "responses": {}
             }
         },
+        "/all-connbd": {
+            "get": {
+                "description": "метод для получения параметров подключения к базам данных и их элиасу",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "GET"
+                ],
+                "summary": "getAllDBConn",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/urlstorage.StorageConnDB"
+                        }
+                    }
+                }
+            }
+        },
         "/all_sync": {
             "get": {
                 "description": "some description",
@@ -46,7 +102,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Get"
+                    "GET"
                 ],
                 "summary": "allSync",
                 "responses": {
@@ -59,11 +115,83 @@ const docTemplate = `{
                 }
             }
         },
+        "/change-one-conn-bd": {
+            "put": {
+                "description": "метод для изменения параметров подключения к БД по элиасу",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "PUT"
+                ],
+                "summary": "ChangeOneDBConn",
+                "parameters": [
+                    {
+                        "description": "body example",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/urlstorage.JsonFormat"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.StateAnswer"
+                        }
+                    }
+                }
+            }
+        },
+        "/one-conn-bd": {
+            "post": {
+                "description": "метод для получения параметров подключения к БД по элиасу",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "GET"
+                ],
+                "summary": "getOneDBConn",
+                "parameters": [
+                    {
+                        "description": "body example",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/api.RequestDBConn"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/urlstorage.ConnDBData"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/start-allSync": {
             "post": {
                 "description": "метод для старта всех синхронизаций",
                 "tags": [
-                    "Post"
+                    "POST"
                 ],
                 "summary": "startAllSync",
                 "responses": {}
@@ -73,7 +201,7 @@ const docTemplate = `{
             "post": {
                 "description": "метод для старта приостановленной синхронизации",
                 "tags": [
-                    "Post"
+                    "POST"
                 ],
                 "summary": "startSync",
                 "parameters": [
@@ -89,11 +217,21 @@ const docTemplate = `{
                 "responses": {}
             }
         },
+        "/stop-allSync": {
+            "post": {
+                "description": "метод остановки всех синхронизаций",
+                "tags": [
+                    "POST"
+                ],
+                "summary": "stopAllSync",
+                "responses": {}
+            }
+        },
         "/stop_sync": {
             "post": {
                 "description": "метод для остановки синхронизации",
                 "tags": [
-                    "Post"
+                    "POST"
                 ],
                 "summary": "stopSync",
                 "parameters": [
@@ -111,9 +249,21 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "api.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {},
+                "status": {
+                    "type": "boolean"
+                }
+            }
+        },
         "api.InputDataApi": {
             "type": "object",
             "properties": {
+                "clean": {
+                    "type": "boolean"
+                },
                 "data_base": {
                     "type": "string"
                 },
@@ -123,7 +273,18 @@ const docTemplate = `{
                 "offset": {
                     "type": "string"
                 },
+                "schema": {
+                    "type": "string"
+                },
                 "table": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.RequestDBConn": {
+            "type": "object",
+            "properties": {
+                "alias": {
                     "type": "string"
                 }
             }
@@ -137,6 +298,43 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "urlstorage.ConnDBData": {
+            "type": "object",
+            "properties": {
+                "bd_name": {
+                    "type": "string"
+                },
+                "host": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "string"
+                },
+                "user": {
+                    "type": "string"
+                }
+            }
+        },
+        "urlstorage.JsonFormat": {
+            "type": "object",
+            "properties": {
+                "conn_data": {
+                    "$ref": "#/definitions/urlstorage.ConnDBData"
+                },
+                "db_alias": {
+                    "type": "string"
+                }
+            }
+        },
+        "urlstorage.StorageConnDB": {
+            "type": "object",
+            "additionalProperties": {
+                "$ref": "#/definitions/urlstorage.ConnDBData"
+            }
         }
     }
 }`
@@ -148,7 +346,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "sync_service",
-	Description:      "This is a sample server Petstore server.",
+	Description:      "API для взаимодействия с сервисом синхронизации таблиц баз данных.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

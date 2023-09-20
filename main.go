@@ -15,7 +15,7 @@ import (
 
 //	@title			sync_service
 //	@version		1.0
-//	@description	This is a sample server Petstore server.
+//	@description	API для взаимодействия с сервисом синхронизации таблиц баз данных.
 
 // @host		localhost:3000
 // @BasePath	/
