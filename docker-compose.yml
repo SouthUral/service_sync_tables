@@ -7,3 +7,15 @@ services:
     restart: always
     ports:
      - 9000:27017
+
+  sync_tables:
+    build: ./
+    container_name: sync_tables
+    depends_on:
+      - mongo_test
+    port:
+     - 3000:3000
+    env_file:
+      - ./.env
+    volumes:
+      - ./dbconfig.json:/etc/config/dbconfig.json
