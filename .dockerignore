@@ -1,0 +1,12 @@
+# Ignore everything
+*
+
+# Allow files and directories
+!/*.go
+!/*.mod
+!/*.sum
+!/api/*.go
+!/database/*
+!/doc/*
+!/state/*.go
+!/tools/*.go

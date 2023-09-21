@@ -1,9 +1,9 @@
-FROM golang:latest
+FROM spbgit.polymetal.ru:5005/polyna/docker/images/asd-golang:1.2 as builder
 
-WORKDIR /usr/src/service/sync_tables
+WORKDIR $GOPATH/src/service/
 
 COPY . .
 
-RUN go build -o /usr/src/service/sync_tables main.go
+RUN go build -o /go/src/service/syncTables main.go
 
-# USER asd:asd
+USER asd:asd

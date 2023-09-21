@@ -13,6 +13,7 @@ services:
     container_name: sync_tables
     depends_on:
       - mongo_test
+    command: /bin/sh -c 'source /polyna/entrypoint_overwrited.sh echo "Run service" && ./syncTables'
     ports:
      - 3000:3000
     env_file:
