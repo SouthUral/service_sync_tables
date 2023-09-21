@@ -7,6 +7,6 @@
 !/*.sum
 !/api/*.go
 !/database/*
-!/doc/*
+!/docs/*
 !/state/*.go
 !/tools/*.go
