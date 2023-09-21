@@ -37,6 +37,7 @@ func (pg *postgresMain) mainWorkPg() {
 			URLs := checkDBalias(mess, pg.mainDB, pg.urlIncomCh)
 			if URLs.err != nil {
 				sendErrorMess(mess, URLs.err, pg.outgoingChan, StartSync)
+				return
 			}
 			go pg.mainStreamSync(URLs.urlMainDb, URLs.urlSecondDb, mess)
 		}

@@ -24,7 +24,7 @@ func checkDBalias(mess IncomingMess, aliasMainDb string, urlCh url.InputUrlStora
 	}
 	urlConn, err := url.GetOneConnURL(mess.Database, urlCh)
 	if err != nil {
-		log.Error(fmt.Sprintf("Нет найдено подключение по переданному ключу: %s", mess.Database))
+		log.Error(fmt.Sprintf("Не найдено подключение по переданному ключу: %s", mess.Database))
 	}
 	res := URLsDB{
 		urlMainDb:   mainUrlConn,
