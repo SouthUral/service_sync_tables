@@ -19,4 +19,4 @@ services:
     env_file:
       - ./.env_docker
     volumes:
-      - ./config:/etc/config
+      - ./dbconfig.json:/etc/config/dbconfig.json
