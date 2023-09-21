@@ -1,8 +1,6 @@
 package main
 
 import (
-	"time"
-
 	Api "github.com/SouthUral/service_sync_tables/api"
 	Mongo "github.com/SouthUral/service_sync_tables/database/mongodb"
 	Postgres "github.com/SouthUral/service_sync_tables/database/postgres"
@@ -45,5 +43,8 @@ func main() {
 	URLStorage.InitUrlStorage(inputUrlChan, envs.UrlStoragePass)
 
 	log.Info("Server is starting")
-	time.Sleep(100000 * time.Second)
+	ch := make(chan struct{})
+
+	<-ch
+	// time.Sleep(100000 * time.Second)
 }
